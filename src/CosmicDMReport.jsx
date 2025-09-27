@@ -1,12 +1,141 @@
+'use client';
 import { jsPDF } from "jspdf";
 
-export const generateCosmicReport = async () => {
+
+export const addPanchangPage = (doc, panchangData) => {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 40;
+  const contentWidth = pageWidth - margin * 2;
+
+  // Add new page
+  doc.addPage();
+
+  // Border
+  doc.setDrawColor("#a16a21");
+  doc.setLineWidth(1.5);
+  doc.rect(25, 25, pageWidth - 50, pageHeight - 50, "S");
+
+  // Header
+  doc.setFont("Times", "bold");
+  doc.setFontSize(22);
+  doc.setTextColor("#000000");
+  doc.text("PANCHANG", pageWidth / 2, 70, { align: "center" });
+
+  // Subheader
+  doc.setFont("Times", "normal");
+  doc.setFontSize(13);
+  doc.setTextColor("#000000");
+  doc.text("Your Daily Cosmic Details", pageWidth / 2, 90, { align: "center" });
+
+  // Columns
+  const colWidth = contentWidth / 4;
+  const col1x = margin;
+  const col2x = col1x + colWidth;
+  const col3x = col2x + colWidth;
+  const col4x = col3x + colWidth;
+  const startY = 130;
+  const rowHeight = 24;
+
+  // Column headers
+  doc.setFont("Times", "bold");
+  doc.setFontSize(16);
+  doc.setTextColor("#a16a21");
+  doc.text("CALENDAR", col1x, startY);
+  doc.text("YEAR", col2x, startY);
+  doc.text("MAH", col3x, startY);
+  doc.text("TITHI/PRAVISHTHE", col4x, startY);
+
+  // Data
+  const calendars = ["National","Punjabi","Bengali","Tamil","Kerala","Nepali","Chaitradi","Kartakadi"];
+  const years = [
+    panchangData.response?.advanced_details?.years?.saka ?? "N/A",
+    panchangData.response?.advanced_details?.years?.vikram_samvaat ?? "N/A",
+    panchangData.response?.advanced_details?.years?.bengali ?? "N/A",
+    panchangData.response?.advanced_details?.years?.tamil ?? "N/A",
+    panchangData.response?.advanced_details?.years?.kerala ?? "N/A",
+    panchangData.response?.advanced_details?.years?.nepali ?? "N/A",
+    panchangData.response?.advanced_details?.years?.chaitradi ?? "N/A",
+    panchangData.response?.advanced_details?.years?.kartakadi ?? "N/A",
+  ];
+  const mahs = [
+    panchangData.response?.advanced_details?.masa?.jyeshtha ?? "N/A",
+    panchangData.response?.advanced_details?.masa?.jyeshtha ?? "N/A",
+    panchangData.response?.advanced_details?.masa?.jyeshtha ?? "N/A",
+    panchangData.response?.advanced_details?.masa?.vaikasi ?? "N/A",
+    panchangData.response?.advanced_details?.masa?.edavam ?? "N/A",
+    panchangData.response?.advanced_details?.masa?.jyeshtha ?? "N/A",
+    panchangData.response?.advanced_details?.masa?.jyeshtha ?? "N/A",
+    panchangData.response?.advanced_details?.masa?.jyeshtha ?? "N/A",
+  ];
+  const tithis = [
+    panchangData.response?.tithi?.name ?? "N/A",
+    "N/A", "N/A", "N/A", "N/A", "N/A", "Shukla 8", "Shukla 8"
+  ];
+
+  // Draw values
+  doc.setFont("Times", "normal");
+  doc.setFontSize(13);
+  calendars.forEach((cal, i) => doc.text(`• ${cal}`, col1x, startY + 28 + i * rowHeight));
+  years.forEach((yr, i) => doc.text(`• ${yr}`, col2x, startY + 28 + i * rowHeight));
+  mahs.forEach((mah, i) => doc.text(`• ${mah}`, col3x, startY + 28 + i * rowHeight));
+  tithis.forEach((tith, i) => doc.text(`• ${tith}`, col4x, startY + 28 + i * rowHeight));
+
+  // Horizontal lines
+  for (let i = 0; i <= calendars.length; i++) {
+    const y = startY + 18 + i * rowHeight;
+    doc.setDrawColor("#a16a21");
+    doc.setLineWidth(0.5);
+    doc.line(col1x - 5, y, col4x + colWidth - 5, y);
+  }
+
+  // Panchang Details
+  const detailsStartY = startY + calendars.length * rowHeight + 50;
+  doc.setFont("Times", "bold");
+  doc.setFontSize(18);
+  doc.setTextColor("#a16a21");
+  doc.text("PANCHANG DETAILS", col1x, detailsStartY);
+
+  const panchangDetails = [
+    ["Tithi At Sunrise", panchangData.response?.tithi?.name ?? "N/A"],
+    ["Tithi Ending Time", panchangData.response?.tithi?.end ?? "N/A"],
+    ["Nakshatra At Sunrise", panchangData.response?.nakshatra?.name ?? "N/A"],
+    ["Nakshatra Ending Time", panchangData.response?.nakshatra?.end ?? "N/A"],
+    ["Yoga At Sunrise", panchangData.response?.yoga?.name ?? "N/A"],
+    ["Yoga Ending Time", panchangData.response?.yoga?.end ?? "N/A"],
+    ["Karana At Sunrise", panchangData.response?.karana?.name ?? "N/A"],
+    ["Karana Ending Time", panchangData.response?.karana?.end ?? "N/A"],
+  ];
+
+  doc.setFont("Times", "normal");
+  doc.setFontSize(13);
+  panchangDetails.forEach(([key, val], i) => {
+    doc.text(key, col1x, detailsStartY + 25 + i * rowHeight);
+    doc.text(val.toString(), col1x + 200, detailsStartY + 25 + i * rowHeight);
+  });
+
+  // Footer
+  const footerStartY = pageHeight - 60;
+  doc.setFontSize(10);
+  doc.setTextColor("#000000");
+  doc.setFont("Times", "bold");
+  doc.text("Astro Arun Pandit Private Limited", pageWidth / 2, footerStartY, { align: "center" });
+
+  doc.setFontSize(8);
+  doc.setFont("Times", "normal");
+  doc.text("Astrology - Numerology - Occult Guidance - Gemstone - Tarot Reading - Consultation", pageWidth / 2, footerStartY + 12, { align: "center" });
+  doc.text("91-9818999037, 91-8604802202", pageWidth / 2, footerStartY + 24, { align: "center" });
+  doc.text("www.astroarunpandit.org, support@astroarunpandit.org", pageWidth / 2, footerStartY + 36, { align: "center" });
+};
+
+
+export const GenerateCosmicReport = async (panchangData) => {
   const doc = new jsPDF("p", "pt", "a4");
 
   // Front page background image
   const img = new Image();
   img.crossOrigin = "anonymous";
-  img.src = "https://media.istockphoto.com/id/2207140922/photo/zodiac-signs-and-astrology-wheel.jpg?s=1024x1024&w=is&k=20&c=DSCCpmdd_Jptk6cAYTwMiU52ODWOwirnJlcC_fdQ0Og=";
+  img.src = "https://img.freepik.com/premium-photo/horoscope-astrology-collage_23-2150324491.jpg?w=1060";
   await new Promise((resolve) => { img.onload = resolve; });
 
   doc.addImage(img, "PNG", 0, 0, 595, 842);
@@ -74,7 +203,7 @@ Embrace this report with an open mind and a cosmic perspective! The universe is 
   doc.text("91-9818999037, 91-8604802202", 297.5, footerStartY + 2 * footerLineHeight, { align: "center" });
   doc.text("www.astroarunpandit.org, support@astroarunpandit.org", 297.5, footerStartY + 3 * footerLineHeight, { align: "center" });
 
- // Page 5 (Message from the Author)
+  // Page 5 (Message from the Author)
   doc.addPage();
 
   doc.setDrawColor("#a16a21");
@@ -126,7 +255,7 @@ Astro Arun Pandit
   doc.text("www.astroarunpandit.org, support@astroarunpandit.org", 297.5, footerStartYPage5 + 3 * footerLineHeightPage5, { align: "center" });
 
 
-  
+
   // Page 3
   doc.addPage();
 
@@ -167,7 +296,7 @@ By following this approach, you'll be able to unlock the full potential of this 
   doc.text("91-9818999037, 91-8604802202", 297.5, 789, { align: "center" });
   doc.text("www.astroarunpandit.org, support@astroarunpandit.org", 297.5, 801, { align: "center" });
 
- // PAGE 5: Table of Contents (as per image provided)
+  // PAGE 5: Table of Contents (as per image provided)
   doc.addPage();
   doc.setDrawColor("#a16a21");
   doc.setLineWidth(1.5);
@@ -236,7 +365,7 @@ By following this approach, you'll be able to unlock the full potential of this 
   doc.text("www.astroarunpandit.org, support@astroarunpandit.org", 297.5, footerStartYPage6 + 3 * footerLineHeightPage6, { align: "center" });
 
 
-   // Page 6 (Table of Contents)
+  // Page 6 (Table of Contents)
   doc.addPage();
 
   // Border
@@ -327,6 +456,6 @@ By following this approach, you'll be able to unlock the full potential of this 
     footerStartYPage4 + 3 * footerLineHeightPage4,
     { align: "center" }
   );
-
+  addPanchangPage(doc, panchangData);
   doc.save("CosmicDMReport.pdf");
 };
