@@ -1,461 +1,281 @@
-'use client';
 import { jsPDF } from "jspdf";
+import { addPanchangPage } from "./addPanchangPage";
+import { fetchKundliDetails, fetchPanchangData, fetchSunrise, fetchSunset, fetchMoonSign, fetchSunSign } from "./api/fetchAstro";
+import { generateAvakahadaChakraPDF } from "./addAvakahadachakra";
+import { addChartsTwoPerPage } from "./addChartPage";
+import { addShodashvargaPage } from "./addShodashvarga";
+import { addDashaPage } from "./addDashapage";
+// Helper function to draw paragraph text with spacing
+const addParagraphs = (doc, text, x, startY, lineHeight = 14, paragraphSpacing = 10) => {
+  const paragraphs = text.trim().split("\n"); // split by line breaks
+  let y = startY;
 
-
-export const addPanchangPage = (doc, panchangData) => {
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 40;
-  const contentWidth = pageWidth - margin * 2;
-
-  // Add new page
-  doc.addPage();
-
-  // Border
-  doc.setDrawColor("#a16a21");
-  doc.setLineWidth(1.5);
-  doc.rect(25, 25, pageWidth - 50, pageHeight - 50, "S");
-
-  // Header
-  doc.setFont("Times", "bold");
-  doc.setFontSize(22);
-  doc.setTextColor("#000000");
-  doc.text("PANCHANG", pageWidth / 2, 70, { align: "center" });
-
-  // Subheader
-  doc.setFont("Times", "normal");
-  doc.setFontSize(13);
-  doc.setTextColor("#000000");
-  doc.text("Your Daily Cosmic Details", pageWidth / 2, 90, { align: "center" });
-
-  // Columns
-  const colWidth = contentWidth / 4;
-  const col1x = margin;
-  const col2x = col1x + colWidth;
-  const col3x = col2x + colWidth;
-  const col4x = col3x + colWidth;
-  const startY = 130;
-  const rowHeight = 24;
-
-  // Column headers
-  doc.setFont("Times", "bold");
-  doc.setFontSize(16);
-  doc.setTextColor("#a16a21");
-  doc.text("CALENDAR", col1x, startY);
-  doc.text("YEAR", col2x, startY);
-  doc.text("MAH", col3x, startY);
-  doc.text("TITHI/PRAVISHTHE", col4x, startY);
-
-  // Data
-  const calendars = ["National","Punjabi","Bengali","Tamil","Kerala","Nepali","Chaitradi","Kartakadi"];
-  const years = [
-    panchangData.response?.advanced_details?.years?.saka ?? "N/A",
-    panchangData.response?.advanced_details?.years?.vikram_samvaat ?? "N/A",
-    panchangData.response?.advanced_details?.years?.bengali ?? "N/A",
-    panchangData.response?.advanced_details?.years?.tamil ?? "N/A",
-    panchangData.response?.advanced_details?.years?.kerala ?? "N/A",
-    panchangData.response?.advanced_details?.years?.nepali ?? "N/A",
-    panchangData.response?.advanced_details?.years?.chaitradi ?? "N/A",
-    panchangData.response?.advanced_details?.years?.kartakadi ?? "N/A",
-  ];
-  const mahs = [
-    panchangData.response?.advanced_details?.masa?.jyeshtha ?? "N/A",
-    panchangData.response?.advanced_details?.masa?.jyeshtha ?? "N/A",
-    panchangData.response?.advanced_details?.masa?.jyeshtha ?? "N/A",
-    panchangData.response?.advanced_details?.masa?.vaikasi ?? "N/A",
-    panchangData.response?.advanced_details?.masa?.edavam ?? "N/A",
-    panchangData.response?.advanced_details?.masa?.jyeshtha ?? "N/A",
-    panchangData.response?.advanced_details?.masa?.jyeshtha ?? "N/A",
-    panchangData.response?.advanced_details?.masa?.jyeshtha ?? "N/A",
-  ];
-  const tithis = [
-    panchangData.response?.tithi?.name ?? "N/A",
-    "N/A", "N/A", "N/A", "N/A", "N/A", "Shukla 8", "Shukla 8"
-  ];
-
-  // Draw values
-  doc.setFont("Times", "normal");
-  doc.setFontSize(13);
-  calendars.forEach((cal, i) => doc.text(`• ${cal}`, col1x, startY + 28 + i * rowHeight));
-  years.forEach((yr, i) => doc.text(`• ${yr}`, col2x, startY + 28 + i * rowHeight));
-  mahs.forEach((mah, i) => doc.text(`• ${mah}`, col3x, startY + 28 + i * rowHeight));
-  tithis.forEach((tith, i) => doc.text(`• ${tith}`, col4x, startY + 28 + i * rowHeight));
-
-  // Horizontal lines
-  for (let i = 0; i <= calendars.length; i++) {
-    const y = startY + 18 + i * rowHeight;
-    doc.setDrawColor("#a16a21");
-    doc.setLineWidth(0.5);
-    doc.line(col1x - 5, y, col4x + colWidth - 5, y);
-  }
-
-  // Panchang Details
-  const detailsStartY = startY + calendars.length * rowHeight + 50;
-  doc.setFont("Times", "bold");
-  doc.setFontSize(18);
-  doc.setTextColor("#a16a21");
-  doc.text("PANCHANG DETAILS", col1x, detailsStartY);
-
-  const panchangDetails = [
-    ["Tithi At Sunrise", panchangData.response?.tithi?.name ?? "N/A"],
-    ["Tithi Ending Time", panchangData.response?.tithi?.end ?? "N/A"],
-    ["Nakshatra At Sunrise", panchangData.response?.nakshatra?.name ?? "N/A"],
-    ["Nakshatra Ending Time", panchangData.response?.nakshatra?.end ?? "N/A"],
-    ["Yoga At Sunrise", panchangData.response?.yoga?.name ?? "N/A"],
-    ["Yoga Ending Time", panchangData.response?.yoga?.end ?? "N/A"],
-    ["Karana At Sunrise", panchangData.response?.karana?.name ?? "N/A"],
-    ["Karana Ending Time", panchangData.response?.karana?.end ?? "N/A"],
-  ];
-
-  doc.setFont("Times", "normal");
-  doc.setFontSize(13);
-  panchangDetails.forEach(([key, val], i) => {
-    doc.text(key, col1x, detailsStartY + 25 + i * rowHeight);
-    doc.text(val.toString(), col1x + 200, detailsStartY + 25 + i * rowHeight);
+  paragraphs.forEach((para) => {
+    if (para.trim() === "") {
+      y += paragraphSpacing; // extra spacing for empty lines
+    } else {
+      const lines = doc.splitTextToSize(para, 490); // fit text width
+      doc.text(lines, x, y);
+      y += lines.length * lineHeight + paragraphSpacing; // line height + paragraph spacing
+    }
   });
 
-  // Footer
-  const footerStartY = pageHeight - 60;
-  doc.setFontSize(10);
-  doc.setTextColor("#000000");
-  doc.setFont("Times", "bold");
-  doc.text("Astro Arun Pandit Private Limited", pageWidth / 2, footerStartY, { align: "center" });
-
-  doc.setFontSize(8);
-  doc.setFont("Times", "normal");
-  doc.text("Astrology - Numerology - Occult Guidance - Gemstone - Tarot Reading - Consultation", pageWidth / 2, footerStartY + 12, { align: "center" });
-  doc.text("91-9818999037, 91-8604802202", pageWidth / 2, footerStartY + 24, { align: "center" });
-  doc.text("www.astroarunpandit.org, support@astroarunpandit.org", pageWidth / 2, footerStartY + 36, { align: "center" });
+  return y; // return last y position for further content
 };
 
+// Full report generator
+export const generateFullCosmicReport = async (dob, time, lat, lon,userData) => {
+  try {
+    // Fetch all data
+    const panchangData = await fetchPanchangData(dob, time, lat, lon);
+    const kundliData = await fetchKundliDetails(dob, time, lat, lon);
+    const sunriseData = await fetchSunrise(dob, time, lat, lon);
+    const sunsetData = await fetchSunset(dob, time, lat, lon);
+    const moonSignData = await fetchMoonSign(dob, time, lat, lon);
+    const sunSignData = await fetchSunSign(dob, time, lat, lon);
 
-export const GenerateCosmicReport = async (panchangData) => {
-  const doc = new jsPDF("p", "pt", "a4");
 
-  // Front page background image
-  const img = new Image();
-  img.crossOrigin = "anonymous";
-  img.src = "https://img.freepik.com/premium-photo/horoscope-astrology-collage_23-2150324491.jpg?w=1060";
-  await new Promise((resolve) => { img.onload = resolve; });
+    const doc = new jsPDF("p", "pt", "a4");
+    const pageWidth = doc.internal.pageSize.getWidth();
 
-  doc.addImage(img, "PNG", 0, 0, 595, 842);
-  const x = 297.5;
-  const y = 180;
+    // --- Cover Page ---
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = "/download.png";
+    await new Promise((res) => { img.onload = res; });
 
-  doc.setFont("CinzelDecorative", "normal");
-  doc.setFontSize(48);
-  doc.setTextColor("#fff8e7");
-  doc.text("COSMIC\nCODE", x, y, { align: "center" });
+    doc.addImage(img, "PNG", 0, 0, 595, 842);
+    doc.setFont("CinzelDecorative", "normal");
+    doc.setFontSize(48);
+    doc.setTextColor("#fff8e7");
+    doc.text("COSMIC\nCODE", pageWidth / 2, 180, { align: "center" });
 
-  doc.setFontSize(18);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor("#000000");
-  doc.text("AMIT GAUR", 250, 300);
+    // --- Disclaimer Page ---
+    doc.addPage();
+    doc.setDrawColor("#a16a21");
+    doc.setLineWidth(1.5);
+    doc.rect(25, 25, 545, 792, "S");
+    doc.setFont("Times", "bold");
+    doc.setFontSize(22);
+    doc.setTextColor("#000");
+    doc.text("DISCLAIMER", pageWidth / 2, 60, { align: "center" });
 
-  doc.setFontSize(14);
-  doc.text("THE UNIVERSE WITHIN YOU", 180, 330);
+    const disclaimerText = `
+This Cosmic Code Report is crafted using the timeless wisdom of Vedic astrology,
+offering insights into how cosmic energies influence your life. Every
+recommendation is based on precise astrological calculations, no personal opinions,
+just cosmic alignment!
 
-  // Page 2
-  doc.addPage();
+Astrology is a vast and multidimensional science, with interpretations that may vary
+across astrologers, platforms, and traditions. This report does not predict fixed
+outcomes but serves as a guiding light to help you navigate life with greater
+awareness and cosmic harmony.
 
-  // Border
-  doc.setDrawColor("#a16a21");
-  doc.setLineWidth(1.5);
-  doc.rect(25, 25, 545, 792, "S");
+While certain practices are believed to influence energetic fields and planetary
+alignments, they are not a substitute for medical, legal, or professional advice. Any
+suggested remedies,whether it’s following a spiritual practice, chanting a mantra, or
+making a donation, should be embraced only if they align with your belief system
+and intuition. Their effectiveness is influenced by faith, intent, and proper adherence
+to astrological wisdom.
 
-  // Header
-  doc.setFont("Times", "bold");
-  doc.setFontSize(22);
-  doc.setTextColor("#000000");
-  doc.text("DISCLAIMER", 297.5, 60, { align: "center" });
+Results are unique to each individual, and no guarantees are provided. The Author is
+not responsible for any decisions or actions taken based on this report, nor for any
+unexpected outcomes. This report is a tool for cosmic awareness and spiritual
+evolution, not a guaranteed solution to life’s challenges.
 
-  doc.setTextColor("#a16a21");
-  doc.setFont("Times", "normal");
-  doc.setFontSize(13);
+Author reserves the right to update the content, design, or recommendations in this
+report at any time without prior notice. No claims or liabilities will be accepted for
+any unfavorable results, as the impact of astrological remedies varies for each
+person.
 
-  const text = `
-This Cosmic Code Report is crafted using the timeless wisdom of Vedic astrology, offering insights into how cosmic energies influence your life. Every recommendation is based on precise astrological calculations, no personal opinions, just cosmic alignment!
-
-Astrology is a vast and multidimensional science, with interpretations that may vary across astrologers, platforms, and traditions. This report does not predict fixed outcomes but serves as a guiding light to help you navigate life with greater awareness and cosmic harmony.
-
-While certain practices are believed to influence energetic fields and planetary alignments, they are not a substitute for medical, legal or professional advice. Any suggested remedies, whether it's following a spiritual practice, chanting a mantra, or making a donation, should be embraced only if they align with your belief system and intuition. Their effectiveness is influenced by faith, intent, and proper adherence to astrological wisdom.
-
-Results are unique to each individual, and no guarantees are provided. The Author is not responsible for any decisions or actions taken based on this report, nor for any unexpected outcomes. This report is a tool for cosmic awareness and spiritual evolution, not a guaranteed solution to life's challenges.
-
-Author reserves the right to update the content, design, or recommendations in this report at any time without prior notice. No claims or liabilities will be accepted for unfavorable results, as the impact of astrological remedies varies for each person.
-
-Embrace this report with an open mind and a cosmic perspective! The universe is always guiding you, but ultimately, you hold the power to shape your destiny.
+Embrace this report with an open mind and a cosmic perspective! The universe is
+always guiding you, but ultimately, you hold the power to shape your destiny.
 `;
+    doc.setFont("Times", "normal");
+    doc.setFontSize(13);
+    doc.setTextColor("#a16a21");
+    addParagraphs(doc, disclaimerText, 50, 110);
 
-  doc.text(doc.splitTextToSize(text, 500), 50, 110);
+    // --- Author Message Page ---
+    doc.addPage();
+    doc.setDrawColor("#a16a21");
+    doc.setLineWidth(1.5);
+    doc.rect(25, 25, 545, 792, "S");
+    doc.setFont("Times", "bold");
+    doc.setFontSize(22);
+    doc.setTextColor("#000");
+    doc.text("MESSAGE FROM THE AUTHOR", pageWidth / 2, 60, { align: "center" });
 
-  const footerStartY = 765;
-  const footerLineHeight = 12;
+    const authorText = `
+Welcome to Your Personalized Cosmic Code Report
+Throughout my journey in the realm of astrology, I’ve had the privilege of helping
+individuals navigate life’s path with greater clarity and alignment. Each person’s
+journey is unique, but the quest for balance, success, and inner peace is something
+we all share.
 
-  doc.setFontSize(10);
-  doc.setTextColor("#000000");
-  doc.setFont("Times", "bold");
-  doc.text("Astro Arun Pandit Private Limited", 297.5, footerStartY, { align: "center" });
+This report is crafted with care, blending ancient Vedic wisdom with practical
+insights to help you understand how cosmic energies influence your life. Every
+recommendation here is based on astrological principles, but remember, your
+intuition and personal experiences play a key role in how you connect with this
+knowledge.
 
-  doc.setFontSize(8);
-  doc.setFont("Times", "normal");
-  doc.text("Astrology - Numerology - Occult Guidance - Gemstone - Tarot Reading - Consultation", 297.5, footerStartY + footerLineHeight, { align: "center" });
-  doc.text("91-9818999037, 91-8604802202", 297.5, footerStartY + 2 * footerLineHeight, { align: "center" });
-  doc.text("www.astroarunpandit.org, support@astroarunpandit.org", 297.5, footerStartY + 3 * footerLineHeight, { align: "center" });
+Inside these pages, you’ll discover how planetary forces shape different aspects of
+your life and how aligning with them can bring harmony. Some insights may
+instantly resonate with you, while others may take time to unfold, embrace what
+feels right, and explore with an open mind.
 
-  // Page 5 (Message from the Author)
-  doc.addPage();
-
-  doc.setDrawColor("#a16a21");
-  doc.setLineWidth(1.5);
-  doc.rect(25, 25, 545, 792, "S");
-
-  doc.setFont("Times", "bold");
-  doc.setFontSize(22);
-  doc.setTextColor("#000000");
-  doc.text("MESSAGE FROM THE AUTHOR", 297.5, 60, { align: "center" });
-
-  doc.setFont("Times", "normal");
-  doc.setFontSize(13);
-  doc.setTextColor("#a16a21");
-  doc.text("Welcome to Your Personalized Cosmic Code Report", 55, 90);
-
-  const authorText = `
-Throughout my journey in the realm of astrology, I've had the privilege of helping individuals navigate life's path with greater clarity and alignment. Each person's journey is unique, but the quest for balance, success, and inner peace is something we all share.
-
-This report is crafted with care, blending ancient Vedic wisdom with practical insights to help you understand how cosmic energies influence your life. Every recommendation here is based on astrological principles, but remember, your intuition and personal experiences play a key role in how you connect with this knowledge.
-
-Inside these pages, you'll discover how planetary forces shape different aspects of your life and how aligning with them can bring harmony. Some insights may instantly resonate with you, while others may take time to unfold, embrace what feels right, and explore with an open mind.
-
-At its core, this report is not just about cosmic alignments, it's about you and your journey toward self-awareness and fulfillment. May these insights bring you clarity, inspiration, and a deeper connection to the universe around you.
+At its core, this report is not just about cosmic alignments, it’s about you and your
+journey toward self-awareness and fulfillment. May these insights bring you clarity,
+inspiration, and a deeper connection to the universe around you.
 
 Wishing you a radiant and prosperous journey ahead!
-
 Warm regards,
 Astro Arun Pandit
 `;
+    doc.setFont("Times", "normal");
+    doc.setFontSize(13);
+    doc.setTextColor("#a16a21");
+    addParagraphs(doc, authorText, 55, 110);
 
-  doc.setFont("Times", "normal");
-  doc.setFontSize(13);
-  doc.setTextColor("#a16a21");
-  doc.text(doc.splitTextToSize(authorText, 490), 55, 110);
+    // --- Study Guide Page ---
+    doc.addPage();
+    doc.setDrawColor("#a16a21");
+    doc.setLineWidth(1.5);
+    doc.rect(25, 25, 545, 792, "S");
+    doc.setFont("Times", "bold");
+    doc.setFontSize(22);
+    doc.setTextColor("#000");
+    doc.text("BEST WAY TO STUDY THE REPORT", pageWidth / 2, 60, { align: "center" });
 
-  const footerStartYPage5 = 765;
-  const footerLineHeightPage5 = 12;
+    const studyText = `
+Unlocking the Power of Your Cosmic Code Report
+Reading your Cosmic Code Report is the first step in aligning yourself with the
+universe’s cosmic energies. It signifies your openness to understanding how
+planetary forces influence different aspects of your life, bringing clarity, balance, and
+deeper self-awareness. But simply reading it once may not be enough to fully grasp
+its depth and significance.
 
-  doc.setFontSize(10);
-  doc.setTextColor("#000000");
-  doc.setFont("Times", "bold");
-  doc.text("Astro Arun Pandit Private Limited", 297.5, footerStartYPage5, { align: "center" });
+To truly absorb the wisdom within, we recommend revisiting this report multiple
+times,at least three times. Each reading will unlock new insights, helping you
+connect with the astrological guidance on a deeper level. Cosmic influences work in
+layers, and repeated reading will allow you to notice details you might overlook
+initially.
 
-  doc.setFontSize(8);
-  doc.setFont("Times", "normal");
-  doc.text("Astrology - Numerology - Occult Guidance - Gemstone - Tarot Reading - Consultation", 297.5, footerStartYPage5 + footerLineHeightPage5, { align: "center" });
-  doc.text("91-9818999037, 91-8604802202", 297.5, footerStartYPage5 + 2 * footerLineHeightPage5, { align: "center" });
-  doc.text("www.astroarunpandit.org, support@astroarunpandit.org", 297.5, footerStartYPage5 + 3 * footerLineHeightPage5, { align: "center" });
+Before diving into your report, take a moment to calm your mind. A focused and
+open mindset will help you absorb the guidance better, making it easier to apply the
+suggested practices effectively. Think of this as a personalized roadmap, meant to be
+studied, reflected upon, and revisited as you navigate your journey.
 
-
-
-  // Page 3
-  doc.addPage();
-
-  doc.setDrawColor("#a16a21");
-  doc.setLineWidth(1.5);
-  doc.rect(25, 25, 545, 792, "S");
-
-  doc.setFont("Times", "bold");
-  doc.setFontSize(22);
-  doc.setTextColor("#000000");
-  doc.text("BEST WAY TO STUDY THE REPORT", 297.5, 60, { align: "center" });
-
-  doc.setFont("Times", "normal");
-  doc.setFontSize(13);
-  doc.setTextColor("#a16a21");
-  doc.text("Unlocking the Power of Your Cosmic Code Report", 55, 90);
-
-  const studyText = `
-Reading your Cosmic Code Report is the first step in aligning yourself with the universe’s cosmic energies. It signifies your openness to understanding how planetary forces influence different aspects of your life, bringing clarity, balance, and deeper self-awareness. But simply reading it once may not be enough to fully grasp its depth and significance.
-
-To truly absorb the wisdom within, we recommend revisiting this report multiple times; at least three times. Each reading will unlock new insights, helping you connect with the astrological guidance on a deeper level. Cosmic influences work in layers, and repeated reading will allow you to notice details you might overlook initially.
-
-Before diving into your report, take a moment to calm your mind. A focused and open mindset will help you absorb the guidance better, making it easier to apply the suggested practices effectively. Think of this as a personalized roadmap, meant to be studied, reflected upon, and revisited as you navigate your journey.
-
-By following this approach, you'll be able to unlock the full potential of this cosmic knowledge, make empowered decisions, and move forward with greater confidence and clarity.
+By following this approach, you’ll be able to unlock the full potential of this cosmic
+knowledge, make empowered decisions, and move forward with greater confidence
+and clarity.
 `;
+    doc.setFont("Times", "normal");
+    doc.setFontSize(13);
+    doc.setTextColor("#a16a21");
+    addParagraphs(doc, studyText, 55, 110);
 
-  doc.text(doc.splitTextToSize(studyText, 490), 55, 110);
+    // --- Table of Contents ---
+    doc.addPage();
+    doc.setDrawColor("#a16a21");
+    doc.setLineWidth(1.5);
+    doc.rect(25, 25, 545, 792, "S");
+    doc.setFont("Times", "bold");
+    doc.setFontSize(22);
+    doc.setTextColor("#a16a21");
+    doc.text("TABLE OF CONTENTS", pageWidth / 2, 60, { align: "center" });
 
-  doc.setFontSize(10);
-  doc.setTextColor("#000000");
-  doc.setFont("Times", "bold");
-  doc.text("Astro Arun Pandit Private Limited", 297.5, 765, { align: "center" });
+    const tocLines = [
+      "01 Understanding Your Planetary Blueprint",
+      "02 The Influence of Your Birth Chart",
+      "03 Bhavphal: Your Life Through the 12 Houses",
+      "04 Planetary Conjunctions",
+      "05 Love & Marriage Snapshot",
+      "06 Career Calling",
+      "07 Chara Karakas",
+      "08 Rahu-Ketu Analysis",
+      "09 Mangalik Effect",
+      "10 Sade Sati Journey",
+      "11 Raj Yogas",
+      "12 Astrological Doshas",
+      "13 Mahadashas",
+      "14 Numerology"
+    ];
 
-  doc.setFontSize(8);
-  doc.setFont("Times", "normal");
-  doc.text("Astrology - Numerology - Occult Guidance - Gemstone - Tarot Reading - Consultation", 297.5, 777, { align: "center" });
-  doc.text("91-9818999037, 91-8604802202", 297.5, 789, { align: "center" });
-  doc.text("www.astroarunpandit.org, support@astroarunpandit.org", 297.5, 801, { align: "center" });
+    doc.setFont("Times", "normal");
+    doc.setFontSize(13);
+    doc.setTextColor("#a16a21");
 
-  // PAGE 5: Table of Contents (as per image provided)
-  doc.addPage();
-  doc.setDrawColor("#a16a21");
-  doc.setLineWidth(1.5);
-  doc.rect(25, 25, 545, 792, "S");
-  doc.setFont("Times", "bold");
-  doc.setFontSize(22);
-  doc.setTextColor("#a16a21");
-  doc.text("TABLE OF CONTENTS", 297.5, 60, { align: "center" });
-  doc.setFont("Times", "normal");
-  doc.setFontSize(13);
-  doc.setTextColor("#a16a21");
-  const tocLines2 = [
-    "01  Understanding Your Planetary Blueprint",
-    "      Fundamental Details",
-    "      Lagna, Moon & Navamsha Charts",
-    "      Snapshot of Partnership",
-    "      Planetary Positions & Degrees (Table)",
-    "      Shadvargiya & Divisional Charts",
-    "      Dasha Chart",
-    "      Ashhtakavarga Charts",
-    "",
-    "02  The Influence of Your Birth Chart",
-    "      Your Panchang Decoded",
-    "      Your Pillars of the Self: Chandra, Lagna & Nakshatra",
-    "      Your Personal Planetary Profile",
-    "      Planetary Influences – 12 Houses & Its Aspects",
-    "",
-    "03  Bhavphal: Your Life Through the 12 Houses",
-    "      Significance of each Bhav/house",
-    "      Detailed analysis of each Bhav",
-    "",
-    "04  When Energies Merge: Planetary Conjunctions of Your Chart",
-    "      Significance of Conjunctions in your Chart",
-    "      Detailed analysis of each conjunction in your chart",
-    "",
-    "05  Astrological Snapshot: Love & Marriage",
-    "      Influence of the 5th House – Love, romance, and emotional connections",
-    "      Dasha-Am – The planet governing your marriage and relationships",
-    "      Timing of Marriage (Table) – Predicting significant relationship timelines",
-    "",
-    "06  Your Career Calling Written in the Stars",
-    "      Two Pillars of Work: Sun's Vision, Saturn's Direction",
-    "      Your Birth Mahadasha & Career Calling",
-    "      Role of Amatyakaraka",
-  ];
-  let tocY2 = 100;
-  for (const line of tocLines2) {
-    if (/^\d{2}/.test(line)) {
-      doc.setFont("Times", "bold");
-    } else {
-      doc.setFont("Times", "normal");
-    }
-    doc.text(line, 55, tocY2);
-    tocY2 += line.trim() === "" ? 7 : 16;
+    let tocY = 100;
+    tocLines.forEach((line) => {
+      doc.setFont(line.match(/^\d{2}/) ? "Times" : "Times", line.match(/^\d{2}/) ? "bold" : "normal");
+      doc.text(line, 55, tocY);
+      tocY += 20; // increased spacing for TOC
+    });
+
+    // --- Avakahada Chakra ---
+    await generateAvakahadaChakraPDF({
+      doc,
+      kundliData,
+      sunriseData,
+      sunsetData,
+      moonSignData,
+      sunSignData,
+      userData
+    });
+
+    // --- Panchang Page ---
+    addPanchangPage(doc, panchangData);
+  const divisionalCharts = [
+  { div: "D1", title: "Birth Chart (Lagna Chart)" },
+  { div: "D2", title: "Hora Chart" },
+  { div: "D3", title: "Drekkana Chart" },
+  { div: "D3-s", title: "Drekkana (Alternative) Chart" },
+  { div: "D4", title: "Chaturthamsha Chart" },
+  { div: "D5", title: "Panchamsha Chart" },
+  { div: "D7", title: "Saptamsha Chart" },
+  { div: "D8", title: "Ashtamsha Chart" },
+  { div: "D9", title: "Navamsha Chart" },
+  { div: "D10", title: "Dashamsha Chart" },
+  { div: "D10-R", title: "Dashamsha (Alternate) Chart" },
+  { div: "D12", title: "Dvadasamsha Chart" },
+  { div: "D16", title: "Shodashamsha Chart" },
+  { div: "D20", title: "Vimsamsa Chart" },
+  { div: "D24", title: "Chaturvimshamsha Chart" },
+  { div: "D24-R", title: "Chaturvimshamsha (Alternate) Chart" },
+  { div: "D27", title: "Saptavimshamsha Chart" },
+  { div: "D30", title: "Trimsamsa Chart" },
+  { div: "D40", title: "Khavedamsha Chart" },
+  { div: "D45", title: "Akshavedamsha Chart" },
+  { div: "D60", title: "Shashtiamsha Chart" },
+  { div: "chalit", title: "Chalit Chart" },
+  { div: "sun", title: "Sun Chart" },
+  { div: "moon", title: "Moon Chart" },
+  { div: "kp_chalit", title: "KP Chalit Chart" },
+  { div: "transit", title: "Transit Chart" }
+];
+
+const chartsArray = divisionalCharts.map(chart => ({
+  div: chart.div,
+  title: chart.title,   // ✅ used for showing text above chart
+  dob,
+  tob: time,
+  lat,
+  lon,
+  tz: 5.5,
+  style: "north",
+  transit_date: "22/01/2022" // or dynamic
+}));
+
+
+await addChartsTwoPerPage(doc, chartsArray);
+await addShodashvargaPage(doc, dob, time, lat, lon);
+await addDashaPage(doc, dob, time, lat, lon);
+
+    // --- Save PDF ---
+    doc.save(`CosmicReport_${dob.replaceAll("-", "")}.pdf`);
+  } catch (error) {
+    console.error(error);
+    alert("Error generating PDF: " + error.message);
   }
-  const footerStartYPage6 = 765;
-  const footerLineHeightPage6 = 12;
-  doc.setFontSize(10);
-  doc.setTextColor("#000000");
-  doc.setFont("Times", "bold");
-  doc.text("Astro Arun Pandit Private Limited", 297.5, footerStartYPage6, { align: "center" });
-  doc.setFontSize(8);
-  doc.setFont("Times", "normal");
-  doc.text("Astrology - Numerology - Occult Guidance - Gemstone - Tarot Reading - Consultation", 297.5, footerStartYPage6 + footerLineHeightPage6, { align: "center" });
-  doc.text("91-9818999037, 91-8604802202", 297.5, footerStartYPage6 + 2 * footerLineHeightPage6, { align: "center" });
-  doc.text("www.astroarunpandit.org, support@astroarunpandit.org", 297.5, footerStartYPage6 + 3 * footerLineHeightPage6, { align: "center" });
-
-
-  // Page 6 (Table of Contents)
-  doc.addPage();
-
-  // Border
-  doc.setDrawColor("#a16a21");
-  doc.setLineWidth(1.5);
-  doc.rect(25, 25, 545, 792, "S");
-
-  // Header
-  doc.setFont("Times", "bold");
-  doc.setFontSize(22);
-  doc.setTextColor("#a16a21");
-  doc.text("TABLE OF CONTENTS", 297.5, 60, { align: "center" });
-
-  // Content
-  doc.setFont("Times", "normal");
-  doc.setFontSize(13);
-  doc.setTextColor("#a16a21");
-
-  const tocLines = [
-    "07  Chara Karakas: The Planets Behind Your Purpose",
-    "   • Meaning and Significance of each Chara Karaka",
-    "   • Impact of each Chara Karaka in your life",
-    "   • Awaken Your Purpose with Chara Karaka",
-    "",
-    "08  Rahu-Ketu Analysis: The Karmic Push and Pull",
-    "   • Significance of Rahu-Ketu",
-    "   • Your Rahu-Ketu Map",
-    "",
-    "09  Born with Fire: Understanding the Mangalik Effect",
-    "   • Meaning of Mangalik Dosh",
-    "   • Effect of Manglik in your Birth Chart",
-    "",
-    "10  Your Sade Sati Journey: Challenge to Transformation",
-    "   • Significance of Sade Sati",
-    "   • Phases of Sade Sati",
-    "   • Importance of Sade Sati",
-    "",
-    "11  Raj Yogas: The Combinations of Fame & Fortune",
-    "12  Astrological Doshas: Karmic Blocks & Planetary Lessons",
-    "13  When Planets Lead: A Journey Through Your Mahadashas",
-    "   • Overview of Mahadashas",
-    "   • Mahadasha Path",
-    "   • Antardasha Path",
-    "",
-    "14  Numerology: Digits of Divinity",
-    "   • Moolank – Your core personality number",
-    "   • Bhagyank – The number defining your destiny and success path",
-    "   • Expression Number – Your key to achieving goals and recognition",
-    "   • Connection Number – Understanding your interpersonal and social strengths"
-  ];
-
-  let tocY = 100;
-  for (const line of tocLines) {
-    if (/^\d{2}/.test(line)) {
-      doc.setFont("Times", "bold");
-    } else {
-      doc.setFont("Times", "normal");
-    }
-    doc.text(line, 55, tocY);
-    tocY += line.trim() === "" ? 7 : 16;
-  }
-
-  const footerStartYPage4 = 765;
-  const footerLineHeightPage4 = 12;
-
-  doc.setFontSize(10);
-  doc.setTextColor("#000000");
-  doc.setFont("Times", "bold");
-  doc.text("Astro Arun Pandit Private Limited", 297.5, footerStartYPage4, { align: "center" });
-
-  doc.setFontSize(8);
-  doc.setFont("Times", "normal");
-  doc.text(
-    "Astrology - Numerology - Occult Guidance - Gemstone - Tarot Reading - Consultation",
-    297.5,
-    footerStartYPage4 + footerLineHeightPage4,
-    { align: "center" }
-  );
-  doc.text(
-    "91-9818999037, 91-8604802202",
-    297.5,
-    footerStartYPage4 + 2 * footerLineHeightPage4,
-    { align: "center" }
-  );
-  doc.text(
-    "www.astroarunpandit.org, support@astroarunpandit.org",
-    297.5,
-    footerStartYPage4 + 3 * footerLineHeightPage4,
-    { align: "center" }
-  );
-  addPanchangPage(doc, panchangData);
-  doc.save("CosmicDMReport.pdf");
 };
