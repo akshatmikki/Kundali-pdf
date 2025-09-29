@@ -7,7 +7,6 @@ export default function AstroPDF() {
   const [lat, setLat] = useState("");
   const [lon, setLon] = useState("");
 
-  // New fields for userData
   const [name, setName] = useState("");
   const [sex, setSex] = useState("");
   const [place, setPlace] = useState("");
@@ -15,6 +14,23 @@ export default function AstroPDF() {
   const [country, setCountry] = useState("");
 
   const [loading, setLoading] = useState(false);
+
+  // Helper to format date in dd-mm-yyyy
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
+
+  // Helper to format time in 24-hour HH:mm
+  const formatTime = (timeStr) => {
+    if (!timeStr) return "";
+    const [h, m] = timeStr.split(":");
+    return `${h.padStart(2, "0")}:${m.padStart(2, "0")}`;
+  };
 
   return (
     <div className="max-w-3xl mx-auto p-6">
@@ -64,14 +80,22 @@ export default function AstroPDF() {
       {/* DOB & Location Inputs */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <input
-          type="date"
-          value={dob}
-          onChange={(e) => setDob(e.target.value)}
+          type="text"
+          placeholder="DD-MM-YYYY"
+          value={formatDate(dob)}
+          onChange={(e) => {
+            const [day, month, year] = e.target.value.split("-");
+            if (day && month && year) {
+              setDob(`${year}-${month}-${day}`); // store in yyyy-mm-dd for compatibility
+            } else {
+              setDob("");
+            }
+          }}
           className="w-full px-4 py-2 border rounded-lg"
         />
         <input
           type="time"
-          value={time}
+          value={formatTime(time)}
           onChange={(e) => setTime(e.target.value)}
           className="w-full px-4 py-2 border rounded-lg"
         />
@@ -99,10 +123,7 @@ export default function AstroPDF() {
           }
           setLoading(true);
 
-          // Prepare userData object
           const userData = { name, sex, dob, time, place, state, country };
-
-          // Pass userData to PDF generator
           await generateFullCosmicReport(dob, time, lat, lon, userData);
           setLoading(false);
         }}

@@ -5,6 +5,7 @@ import { generateAvakahadaChakraPDF } from "./addAvakahadachakra";
 import { addChartsTwoPerPage } from "./addChartPage";
 import { addShodashvargaPage } from "./addShodashvarga";
 import { addDashaPage } from "./addDashapage";
+import { addVimshottariDashaPage } from "./addVimshottariPage";
 // Helper function to draw paragraph text with spacing
 const addParagraphs = (doc, text, x, startY, lineHeight = 14, paragraphSpacing = 10) => {
   const paragraphs = text.trim().split("\n"); // split by line breaks
@@ -269,8 +270,14 @@ const chartsArray = divisionalCharts.map(chart => ({
 
 
 await addChartsTwoPerPage(doc, chartsArray);
-await addShodashvargaPage(doc, dob, time, lat, lon);
-await addDashaPage(doc, dob, time, lat, lon);
+const dobStr = typeof dob === "string"
+  ? dob
+  : `${dob.getDate().toString().padStart(2,"0")}/${(dob.getMonth()+1).toString().padStart(2,"0")}/${dob.getFullYear()}`;
+
+await addShodashvargaPage(doc, dobStr, time, lat, lon);
+await addDashaPage(doc, dobStr, time, lat, lon);  
+await addVimshottariDashaPage(doc, dobStr, time, lat, lon);
+
 
     // --- Save PDF ---
     doc.save(`CosmicReport_${dob.replaceAll("-", "")}.pdf`);
