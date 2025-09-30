@@ -3,27 +3,59 @@ import autoTable from "jspdf-autotable";
 import { fetchMahaDasha, fetchAntarDasha } from "./api/fetchAstro";
 
 /**
+ * Helper function to draw an Antar Dasha table
+ */
+function drawAntarDashaTable(
+    doc: jsPDF,
+    pageWidth: number,
+    mahadashaLord: string,
+    antarRows: string[][],
+    startY: number
+): number {
+    doc.addPage();
+    doc.setFont("Times", "bold");
+    doc.setFontSize(16);
+    doc.text(`Antar Dasha in ${mahadashaLord} Mahadasha`, pageWidth / 2, 50, { align: "center" });
+
+    autoTable(doc, {
+        head: [["Antar Dasha Lord", "Start Date", "End Date"]],
+        body: antarRows,
+        startY: startY, // Use this for consistent initial startY on a new page
+        theme: "grid",
+        headStyles: { fillColor: [120, 49, 94], textColor: "#fff", fontStyle: "bold" },
+        bodyStyles: { fontSize: 10 },
+        margin: { left: 25, right: 25 },
+    });
+
+    // Return the new Y position after the table, plus some margin
+    return (doc as any).lastAutoTable.finalY + 10;
+}
+
+/**
  * Add Vimshottari Dasha Page to PDF
  */
 export async function addVimshottariDashaPage(
-    doc: jsPDF, // ✅ type fixed
-    dob: string, // e.g. "12/05/1999"
-    tob: string, // e.g. "10:15"
-    lat: number, // ✅ latitude
-    lon: number  // ✅ longitude
+    doc: jsPDF,
+    dob: string,
+    tob: string,
+    lat: number,
+    lon: number
 ): Promise<void> {
     doc.addPage();
     const pageWidth = doc.internal.pageSize.getWidth();
+    let currentY = 50; // Initial Y for the title
 
     // Title
     doc.setFont("Times", "bold");
     doc.setFontSize(20);
     doc.setTextColor("#3e4a89");
-    doc.text("Vimshottari Dasha", pageWidth / 2, 50, { align: "center" });
+    doc.text("Vimshottari Dasha", pageWidth / 2, currentY, { align: "center" });
+    currentY += 30;
 
     // 1. Fetch Maha Dasha
     const mahaData = await fetchMahaDasha(dob, tob, lat, lon);
-    const mahaRows = mahaData.response.mahadasha.map((lord: string, i: number) => {
+    const mahaDashaLords = mahaData.response.mahadasha;
+    const mahaRows = mahaDashaLords.map((lord: string, i: number) => {
         const startDate = mahaData.response.mahadasha_order[i];
         const endDate = mahaData.response.mahadasha_order[i + 1] || "-"; // last one
         return [
@@ -34,10 +66,11 @@ export async function addVimshottariDashaPage(
         ];
     });
 
+    // Maha Dasha Table
     autoTable(doc, {
         head: [["Mahadasha Lord", "Start Date", "End Date", "Duration"]],
         body: mahaRows,
-        startY: 80,
+        startY: currentY,
         theme: "grid",
         headStyles: {
             fillColor: [62, 74, 137],
@@ -48,33 +81,37 @@ export async function addVimshottariDashaPage(
         margin: { left: 25, right: 25 },
     });
 
-    // 2. Antar Dasha (only current Maha)
-    const currentMahaLord = mahaData.response.mahadasha[0]; // simplest approach
+    // Update currentY to below the Mahadasha table
+    currentY = (doc as any).lastAutoTable.finalY + 20;
 
-    if (currentMahaLord) {
-        doc.addPage();
-        doc.setFont("Times", "bold");
-        doc.setFontSize(16);
-        doc.text(`Antar Dasha in ${currentMahaLord} Mahadasha`, pageWidth / 2, 50, { align: "center" });
+    // 2. Antar Dasha (for ALL Maha Dashas)
+    const antarData = await fetchAntarDasha(dob, tob, lat, lon);
 
-        const antarData = await fetchAntarDasha(dob, tob, lat, lon);
-        const mahaIndex = 0; // pick the correct Mahadasha index
-        const antarRows = antarData.response.antardashas[mahaIndex].map(
-            (d: string, i: number) => [
-                d,
-                antarData.response.antardasha_order[mahaIndex][i],
-                antarData.response.antardasha_order[mahaIndex][i + 1] || "-"
-            ]
-        );
+    // Loop through all Maha Dashas to generate their Antar Dasha tables
+    for (let mahaIndex = 0; mahaIndex < mahaDashaLords.length; mahaIndex++) {
+        const currentMahaLord = mahaDashaLords[mahaIndex];
+        
+        // Check if there is Antar Dasha data for this Mahadasha
+        if (antarData.response.antardashas[mahaIndex] && antarData.response.antardasha_order[mahaIndex]) {
+            
+            // Map the Antar Dasha data into rows for jspdf-autotable
+            const antarRows = antarData.response.antardashas[mahaIndex].map(
+                (d: string, i: number) => [
+                    d,
+                    antarData.response.antardasha_order[mahaIndex][i],
+                    // Get the end date from the next index in the order array
+                    antarData.response.antardasha_order[mahaIndex][i + 1] || "-" 
+                ]
+            );
 
-        autoTable(doc, {
-            head: [["Antar Dasha Lord", "Start Date", "End Date"]],
-            body: antarRows,
-            startY: 80,
-            theme: "grid",
-            headStyles: { fillColor: [120, 49, 94], textColor: "#fff", fontStyle: "bold" },
-            bodyStyles: { fontSize: 10 },
-            margin: { left: 25, right: 25 },
-        });
+            // Draw the table on a new page
+            currentY = drawAntarDashaTable(
+                doc,
+                pageWidth,
+                currentMahaLord,
+                antarRows,
+                80 // Start Y for the table on the new page
+            );
+        }
     }
 }
