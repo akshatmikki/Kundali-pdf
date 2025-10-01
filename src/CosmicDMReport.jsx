@@ -7,6 +7,8 @@ import { addShodashvargaPage } from "./addShodashvarga";
 import { addVimshottariDashaPage } from "./addVimshottariPage";
 import { addPanchangAnalysisPage } from "./addPanchangDetails";
 import { addPanchangNarrativePage } from "./addPanchangNarativePage";
+import { addKundaliDetailsPage } from "./addKundaliDetailsPage";
+
 // Helper function to draw paragraph text with spacing
 const addParagraphs = (doc, text, x, startY, lineHeight = 14, paragraphSpacing = 10) => {
   const paragraphs = text.trim().split("\n"); // split by line breaks
@@ -280,7 +282,7 @@ await addVimshottariDashaPage(doc, dobStr, time, lat, lon);
 // --- Panchang Detailed Pages ---
 await addPanchangNarrativePage(doc, panchangData);
 await addPanchangAnalysisPage(doc, panchangData);
-
+await addKundaliDetailsPage(doc, dob, time, lat, lon);
 
     // --- Save PDF ---
     doc.save(`CosmicReport_${dob.replaceAll("-", "")}.pdf`);
