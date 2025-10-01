@@ -30,32 +30,40 @@ const addFooter = (doc) => {
     );
 };
 
-// Utility to check page overflow and add page if needed
-const checkPageOverflow = (doc, currentY, margin = 30) => {
+// Page border
+const addPageBorder = (doc, margin = 15) => {
+    const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    // A more generous check: ensure there's enough space for the next title + 4 lines of text
+    doc.setDrawColor(161, 106, 33); // accent color RGB
+    doc.setLineWidth(1);
+    doc.rect(margin, margin, pageWidth - 2 * margin, pageHeight - 2 * margin);
+};
+
+// Check for page overflow
+const checkPageOverflow = (doc, currentY, margin = 50) => {
+    const pageHeight = doc.internal.pageSize.getHeight();
     if (currentY > pageHeight - margin - 100) { 
         doc.addPage();
-        return 50; // reset currentY for new page
+        addPageBorder(doc);
+        return margin; 
     }
     return currentY;
 };
 
-// --- Refined Analysis Page Function ---
-
+// --- Analysis Page --- 
 export const addPanchangAnalysisPage = (doc, data) => {
     doc.addPage();
+    addPageBorder(doc);
+
     const pageWidth = doc.internal.pageSize.getWidth();
-    const margin = 30;
-    let currentY = 50;
-    const accentColor = "#a16a21"; 
-    const textColor = "#111111"; 
-    
-    // Consistent spacing variables
-    const headerSpacing = 30;
+    const margin = 50;
+    let currentY = margin;
+    const accentColor = "#a16a21";
+    const textColor = "#111111";
+    const sectionLineHeight = 14;
     const sectionTitleSpacing = 16;
-    const sectionLineHeight = 10; // Line height for the body text
-    const sectionPadding = 20; // Space between sections
+    const sectionPadding = 20;
+    const headingSpacing = 30;
 
     const res = data?.response || {};
     const day = res.day?.name || "";
@@ -71,91 +79,78 @@ export const addPanchangAnalysisPage = (doc, data) => {
     const paksha = res.advanced_details?.masa?.paksha || "";
     const ritu = res.advanced_details?.masa?.ritu || "";
 
-    // Header
+    // --- Header ---
     doc.setFont("Times", "bold");
-    doc.setFontSize(24); 
+    doc.setFontSize(22);
     doc.setTextColor(accentColor);
     doc.text("ASTROLOGICAL INSIGHTS", pageWidth / 2, currentY, { align: "center" });
-    currentY += headerSpacing;
+    currentY += headingSpacing;
 
     doc.setFont("Times", "normal");
     doc.setFontSize(12);
     doc.setTextColor(textColor);
 
-    // Helper function to draw a section
+    // --- Section Helper ---
     const drawSection = (title, textContent, isList = false) => {
-        // 1. Check for overflow BEFORE drawing the title
         currentY = checkPageOverflow(doc, currentY, margin);
 
-        // 2. Title
+        // Section title
         doc.setFont("Times", "bold");
         doc.setFontSize(14);
         doc.setTextColor(accentColor);
         doc.text(title, margin, currentY);
         currentY += sectionTitleSpacing;
 
-        // 3. Content
         doc.setFont("Times", "normal");
         doc.setFontSize(12);
         doc.setTextColor(textColor);
 
+        const safeWidth = pageWidth - margin * 2 - 5;
+
         if (isList) {
             textContent.forEach(item => {
-                currentY = checkPageOverflow(doc, currentY, margin);
-                
-                // Draw a simple bullet (standard Times font bullet is often safe)
-                doc.setFont("Times", "normal");
-                doc.text("•", margin, currentY); 
-                
-                // Text starts slightly indented and is plain text (no ** markers)
-                const plainItem = item.replace(/\*\*/g, '');
-                const lines = doc.splitTextToSize(plainItem, pageWidth - margin * 2 - 10);
-                doc.text(lines, margin + 5, currentY, { align: "justify" });
-                currentY += lines.length * sectionLineHeight;
+                const lines = doc.splitTextToSize(item, safeWidth - 10); // indent for bullet
+                lines.forEach((line, idx) => {
+                    currentY = checkPageOverflow(doc, currentY, margin);
+                    doc.text(idx === 0 ? `• ${line}` : `  ${line}`, margin + 10, currentY);
+                    currentY += sectionLineHeight;
+                });
             });
         } else {
-            // Narrative section - ensure text is plain for reliable wrapping
-            const plainText = textContent.replace(/\*\*/g, '');
-            const lines = doc.splitTextToSize(plainText, pageWidth - margin * 2);
-            doc.text(lines, margin, currentY, { align: "justify" });
-            currentY += lines.length * sectionLineHeight;
+            const lines = doc.splitTextToSize(textContent, safeWidth);
+            lines.forEach(line => {
+                currentY = checkPageOverflow(doc, currentY, margin);
+                doc.text(line, margin, currentY, { align: "justify" });
+                currentY += sectionLineHeight;
+            });
         }
 
-        // 4. Padding after content
         currentY += sectionPadding;
     };
 
-
-    // --- Strengths / Personality Section ---
+    // --- Narrative Sections ---
     const strengthText = 
         `Born on ${day} (${tithi} - ${tithiType}), under ${nakshatra} Nakshatra, ${yoga} Yoga, and ${karana} Karana, you possess unique strengths. ` + 
-        `${tithiMeaning || "Your Tithi provides strong foundational energy."} ${nakshatraSummary || "Your Nakshatra guides your inner nature."} ${yogaMeaning || "Your Yoga determines your cosmic luck."} ${karanaSpecial || "Your Karana influences your daily actions."}`;
+        `${tithiMeaning || ""} ${nakshatraSummary || ""} ${yogaMeaning || ""} ${karanaSpecial || ""}`;
     drawSection("Strengths / Personality", strengthText);
 
-
-    // --- Relationships Section ---
     const relationshipText = 
-        `Your Nakshatra and Tithi significantly influence how you interact with others and your relationship dynamics. ` + 
-        `${nakshatraSummary || "You are naturally charismatic and attract meaningful relationships."} Paying attention to compatibility and clear communication will greatly enhance your bonds and emotional stability.`;
+        `Your Nakshatra and Tithi influence how you interact with others and your relationship dynamics. ` + 
+        `${nakshatraSummary || ""} Paying attention to compatibility and clear communication will enhance your bonds.`;
     drawSection("Relationships", relationshipText);
 
-
-    // --- Success / Career Tips Section ---
     const careerText = 
         `Based on your Panchang, success strategies are guided by your Tithi (${tithiType}), Yoga (${yoga}), and Karana (${karana}). ` + 
-        `${tithiMeaning || "Look for careers requiring perseverance."} ${yogaMeaning || "Focus on service-oriented or creative fields."} ${karanaSpecial || "Your Karana suggests a pragmatic approach to work."} Focus on areas where your cosmic energies are strongest to maximize achievement.`;
+        `${tithiMeaning || ""} ${yogaMeaning || ""} ${karanaSpecial || ""} Focus on areas where your cosmic energies are strongest.`;
     drawSection("Success / Career Tips", careerText);
 
-
-    // --- Cautions / Things to Avoid Section (Formatted as a List) ---
     const cautionList = [
-        `Avoid starting high-risk ventures or important initiatives on days or times not aligned with your birth elements.`,
-        `During ${paksha || "certain"} Paksha, be cautious of impulsive spending or making sudden commitments.`,
-        `The influence of ${ritu || "your"} Ritu suggests avoiding major health changes or physically taxing efforts during incompatible periods.`,
-        `Do not ignore the need for balance; a focus on a single aspect (e.g., career) can strain other relationships.`
+        `Avoid starting high-risk ventures or initiatives on days not aligned with your birth elements.`,
+        `During ${paksha || "certain"} Paksha, be cautious of impulsive spending or sudden commitments.`,
+        `The influence of ${ritu || "your"} Ritu suggests avoiding major health changes or physically taxing efforts.`,
+        `Do not ignore the need for balance; a focus on a single aspect can strain other relationships.`
     ];
     drawSection("Cautions / Things to Avoid", cautionList, true);
 
-    // Footer
     addFooter(doc);
 };

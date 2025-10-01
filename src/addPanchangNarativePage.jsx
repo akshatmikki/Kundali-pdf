@@ -1,12 +1,10 @@
 'use client';
-import { jsPDF } from "jspdf";
 
-// --- Utility Functions (Kept as is or slightly adjusted for clarity) ---
-
+// --- Footer ---
 const addFooter = (doc) => {
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    const footerY = pageHeight - 45; 
+    const footerY = pageHeight - 45;
     const lineHeight = 10;
     const black = "#000000";
 
@@ -27,39 +25,43 @@ const addFooter = (doc) => {
     doc.text(
         "91-9818999037, 91-8604802202 | www.astroarunpandit.org | support@astroarunpandit.org",
         pageWidth / 2,
-        footerY + 2 * lineHeight, 
+        footerY + 2 * lineHeight,
         { align: "center" }
     );
 };
 
-// Utility to check page overflow and add page if needed
-// Adjusted margin for better look and reset Y
-const checkPageOverflow = (doc, currentY, margin = 30) => {
+// --- Page Border ---
+const addPageBorder = (doc, margin = 15) => {
+    const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    // Check if the next section (Title + at least 3 lines of text) will fit
-    if (currentY > pageHeight - margin - 110) { 
+    doc.setDrawColor(161, 106, 33); // accent color RGB
+    doc.setLineWidth(1);
+    doc.rect(margin, margin, pageWidth - 2 * margin, pageHeight - 2 * margin);
+};
+
+// --- Page Overflow Check ---
+const checkPageOverflow = (doc, currentY, margin = 50) => {
+    const pageHeight = doc.internal.pageSize.getHeight();
+    if (currentY > pageHeight - margin - 100) {
         doc.addPage();
-        return 50; // reset currentY for new page
+        addPageBorder(doc);
+        return margin; // reset Y
     }
     return currentY;
 };
 
-// --- Main Function (Refined) ---
-
-export const addPanchangNarrativePage = (doc, data) => {
+// --- Panchang Narrative Page (Redesigned) ---
+export const addPanchangNarrativePage = (doc, data, imageUrl) => {
     doc.addPage();
+    addPageBorder(doc);
+
     const pageWidth = doc.internal.pageSize.getWidth();
-    const margin = 30;
-    let currentY = 50;
+    const margin = 50;
+    let currentY = margin;
     const accentColor = "#a16a21";
     const textColor = "#111111";
-    
-    // Define consistent spacing constants
-    const headingSpacing = 25;
-    const introLineHeight = 15; // Increased line height for intro for readability
-    const sectionLineHeight = 10; // Consistent line height for section body text
-    const sectionTitleSpacing = 16; // Space after section title
-    const sectionPadding = 22; // Space between sections
+    const sectionLineHeight = 14;
+    const sectionPadding = 20;
 
     const res = data?.response || {};
     const day = res.day?.name || "";
@@ -81,101 +83,102 @@ export const addPanchangNarrativePage = (doc, data) => {
     const yamakanta = res.yamakanta || "";
     const ayanamsa = res.ayanamsa?.name || "";
 
-    // Intro Header
+    // --- Top Round Image ---
+    if (imageUrl) {
+        const imgSize = 80;
+        const centerX = pageWidth / 2;
+        doc.circle(centerX, currentY + imgSize / 2, imgSize / 2, 'S'); // draw circle outline
+        doc.addImage(imageUrl, 'JPEG', centerX - imgSize / 2, currentY, imgSize, imgSize, undefined, 'FAST');
+        currentY += imgSize + 20;
+    }
+
+    // --- Title ---
     doc.setFont("Times", "bold");
     doc.setFontSize(22);
     doc.setTextColor(accentColor);
     doc.text("YOUR PANCHANG DECODED", pageWidth / 2, currentY, { align: "center" });
-    currentY += headingSpacing;
+    currentY += 25;
 
-    // Intro Body
+    // --- Intro ---
     doc.setFont("Times", "normal");
     doc.setFontSize(12);
     doc.setTextColor(textColor);
     const intro = "Your Panchang is a cosmic snapshot of the stars and planets at your birth. It reveals key details like Tithi, Nakshatra, Yoga, Karana, and Vaar, which influence your personality and life path.";
-    const introLines = doc.splitTextToSize(intro, pageWidth - margin * 2);
+    const introLines = doc.splitTextToSize(intro, pageWidth - 2 * margin);
     doc.text(introLines, margin, currentY, { align: "justify" });
-    currentY += introLines.length * introLineHeight;
-    currentY += headingSpacing; // Add extra space after the intro
+    currentY += introLines.length * sectionLineHeight + 20;
 
-    // Dynamic Sections from API
-    const sections = [
-        {
-            title: `Vaar: ${day}`,
-            text: `Born on ${day}, you carry the traits associated with this day. It influences your strengths, personality, and opportunities.`,
-            type: 'narrative'
-        },
-        {
-            title: `Tithi: ${tithi} (${tithiType})`,
-            text: `Being born on this Tithi (${tithiType} Paksha), you are imbued with the following qualities: ${tithiMeaning || "No additional info available."}`,
-            type: 'narrative'
-        },
-        {
-            title: `Nakshatra: ${nakshatra}`,
-            text: `Your Nakshatra, ${nakshatra}, shapes your life path, behavior, and interactions. ${nakshatraSummary || ""}`,
-            type: 'narrative'
-        },
-        {
-            title: `Yoga: ${yoga}`,
-            text: `Yoga at your birth is ${yoga}, representing the cosmic energy available to you. ${yogaMeaning || ""}`,
-            type: 'narrative'
-        },
-        {
-            title: `Karana: ${karana}`,
-            text: `Karana present at birth: ${karana}. ${karanaSpecial || ""}`,
-            type: 'narrative'
-        },
-        {
-            title: "Other Cosmic Details",
-            // Format details as a list for better readability than a single blob
-            details: [
-                `Paksha: ${paksha}`,
-                `Ritu: ${ritu}`,
-                `Sun Zodiac: ${sunZodiac}`,
-                `Moon Degree: ${moonDegree}°`,
-                `Rahukaal: ${rahukaal}`,
-                `Gulika: ${gulika}`,
-                `Yamakanta: ${yamakanta}`,
-                `Ayanamsa: ${ayanamsa}`
-            ],
-            type: 'list'
-        }
-    ];
-
-    sections.forEach(sec => {
-        // Check for page overflow before drawing the title
+    // --- Section Helper ---
+    const drawSection = (title, textContent, isList = false) => {
         currentY = checkPageOverflow(doc, currentY, margin);
 
-        // Section Title
+        // Title
         doc.setFont("Times", "bold");
         doc.setFontSize(14);
         doc.setTextColor(accentColor);
-        doc.text(sec.title, margin, currentY);
-        currentY += sectionTitleSpacing;
+        doc.text(title, margin, currentY);
+        currentY += 16;
 
         doc.setFont("Times", "normal");
         doc.setFontSize(12);
         doc.setTextColor(textColor);
-        
-        // Section Content
-        if (sec.type === 'narrative') {
-            const lines = doc.splitTextToSize(sec.text, pageWidth - margin * 2);
-            doc.text(lines, margin, currentY, { align: "justify" });
-            // Use consistent line height
-            currentY += lines.length * sectionLineHeight; 
-        } else if (sec.type === 'list') {
-             // For the list, iterate through details
-             sec.details.forEach(detail => {
-                currentY = checkPageOverflow(doc, currentY, margin); // Check overflow per detail line
-                // Simple bullet/hyphen and slight indent
-                doc.text(`• ${detail}`, margin + 5, currentY);
+
+        const safeWidth = pageWidth - margin * 2 - 5;
+
+        if (isList) {
+            textContent.forEach(item => {
+                const lines = doc.splitTextToSize(item, safeWidth - 10);
+                lines.forEach((line, idx) => {
+                    currentY = checkPageOverflow(doc, currentY, margin);
+                    doc.text(idx === 0 ? `• ${line}` : `  ${line}`, margin + 10, currentY);
+                    currentY += sectionLineHeight;
+                });
+            });
+        } else {
+            const lines = doc.splitTextToSize(textContent, safeWidth);
+            lines.forEach(line => {
+                currentY = checkPageOverflow(doc, currentY, margin);
+                doc.text(line, margin, currentY, { align: "justify" });
                 currentY += sectionLineHeight;
-             });
+            });
         }
+        currentY += sectionPadding;
+    };
 
-        currentY += sectionPadding; // Consistent space after each section
-    });
+    // --- Narrative Sections ---
+    const strengthText = 
+        `Born on ${day} (${tithi} - ${tithiType}), under ${nakshatra} Nakshatra, ${yoga} Yoga, and ${karana} Karana, you possess unique strengths. ` + 
+        `${tithiMeaning || ""} ${nakshatraSummary || ""} ${yogaMeaning || ""} ${karanaSpecial || ""}`;
+    drawSection("Strengths / Personality", strengthText);
 
-    // Footer
+    const relationshipText = 
+        `Your Nakshatra and Tithi influence how you interact with others and your relationship dynamics. ` + 
+        `${nakshatraSummary || ""} Paying attention to compatibility and clear communication will enhance your bonds.`;
+    drawSection("Relationships", relationshipText);
+
+    const careerText = 
+        `Based on your Panchang, success strategies are guided by your Tithi (${tithiType}), Yoga (${yoga}), and Karana (${karana}). ` + 
+        `${tithiMeaning || ""} ${yogaMeaning || ""} ${karanaSpecial || ""} Focus on areas where your cosmic energies are strongest.`;
+    drawSection("Success / Career Tips", careerText);
+
+    const cautionList = [
+        `Avoid starting high-risk ventures or initiatives on days not aligned with your birth elements.`,
+        `During ${paksha || "certain"} Paksha, be cautious of impulsive spending or sudden commitments.`,
+        `The influence of ${ritu || "your"} Ritu suggests avoiding major health changes or physically taxing efforts.`,
+        `Do not ignore the need for balance; a focus on a single aspect can strain other relationships.`
+    ];
+    drawSection("Cautions / Things to Avoid", cautionList, true);
+
+    const cosmicList = [
+        `Sun Zodiac: ${sunZodiac}`,
+        `Moon Degree: ${moonDegree}°`,
+        `Rahukaal: ${rahukaal}`,
+        `Gulika: ${gulika}`,
+        `Yamakanta: ${yamakanta}`,
+        `Ayanamsa: ${ayanamsa}`
+    ];
+    drawSection("Other Cosmic Details", cosmicList, true);
+
+    // --- Footer ---
     addFooter(doc);
 };

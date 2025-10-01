@@ -1,12 +1,13 @@
 import { jsPDF } from "jspdf";
 import { addPanchangPage } from "./addPanchangPage";
-import { fetchKundliDetails, fetchPanchangData, fetchSunrise, fetchSunset, fetchMoonSign, fetchSunSign } from "./api/fetchAstro";
+import { fetchKundliDetails, fetchPanchangData, fetchSunrise, fetchSunset, fetchMoonSign, fetchSunSign, fetchPlanetReport } from "./api/fetchAstro";
 import { generateAvakahadaChakraPDF } from "./addAvakahadachakra";
 import { addChartsTwoPerPage } from "./addChartPage";
 import { addShodashvargaPage } from "./addShodashvarga";
 import { addVimshottariDashaPage } from "./addVimshottariPage";
 import { addPanchangAnalysisPage } from "./addPanchangDetails";
 import { addPanchangNarrativePage } from "./addPanchangNarativePage";
+import { addPlanetNarrativePage } from "./addPlanetReport";
 // Helper function to draw paragraph text with spacing
 const addParagraphs = (doc, text, x, startY, lineHeight = 14, paragraphSpacing = 10) => {
   const paragraphs = text.trim().split("\n"); // split by line breaks
@@ -26,7 +27,7 @@ const addParagraphs = (doc, text, x, startY, lineHeight = 14, paragraphSpacing =
 };
 
 // Full report generator
-export const generateFullCosmicReport = async (dob, time, lat, lon,userData) => {
+export const generateFullCosmicReport = async (dob, time, lat, lon, userData) => {
   try {
     // Fetch all data
     const panchangData = await fetchPanchangData(dob, time, lat, lon);
@@ -228,59 +229,77 @@ and clarity.
 
     // --- Panchang Page ---
     addPanchangPage(doc, panchangData);
-  const divisionalCharts = [
-  { div: "D1", title: "Birth Chart (Lagna Chart)" },
-  { div: "D2", title: "Hora Chart" },
-  { div: "D3", title: "Drekkana Chart" },
-  { div: "D3-s", title: "Drekkana (Alternative) Chart" },
-  { div: "D4", title: "Chaturthamsha Chart" },
-  { div: "D5", title: "Panchamsha Chart" },
-  { div: "D7", title: "Saptamsha Chart" },
-  { div: "D8", title: "Ashtamsha Chart" },
-  { div: "D9", title: "Navamsha Chart" },
-  { div: "D10", title: "Dashamsha Chart" },
-  { div: "D10-R", title: "Dashamsha (Alternate) Chart" },
-  { div: "D12", title: "Dvadasamsha Chart" },
-  { div: "D16", title: "Shodashamsha Chart" },
-  { div: "D20", title: "Vimsamsa Chart" },
-  { div: "D24", title: "Chaturvimshamsha Chart" },
-  { div: "D24-R", title: "Chaturvimshamsha (Alternate) Chart" },
-  { div: "D27", title: "Saptavimshamsha Chart" },
-  { div: "D30", title: "Trimsamsa Chart" },
-  { div: "D40", title: "Khavedamsha Chart" },
-  { div: "D45", title: "Akshavedamsha Chart" },
-  { div: "D60", title: "Shashtiamsha Chart" },
-  { div: "chalit", title: "Chalit Chart" },
-  { div: "sun", title: "Sun Chart" },
-  { div: "moon", title: "Moon Chart" },
-  { div: "kp_chalit", title: "KP Chalit Chart" },
-  { div: "transit", title: "Transit Chart" }
-];
+    const divisionalCharts = [
+      { div: "D1", title: "Birth Chart (Lagna Chart)" },
+      { div: "D2", title: "Hora Chart" },
+      { div: "D3", title: "Drekkana Chart" },
+      { div: "D3-s", title: "Drekkana (Alternative) Chart" },
+      { div: "D4", title: "Chaturthamsha Chart" },
+      { div: "D5", title: "Panchamsha Chart" },
+      { div: "D7", title: "Saptamsha Chart" },
+      { div: "D8", title: "Ashtamsha Chart" },
+      { div: "D9", title: "Navamsha Chart" },
+      { div: "D10", title: "Dashamsha Chart" },
+      { div: "D10-R", title: "Dashamsha (Alternate) Chart" },
+      { div: "D12", title: "Dvadasamsha Chart" },
+      { div: "D16", title: "Shodashamsha Chart" },
+      { div: "D20", title: "Vimsamsa Chart" },
+      { div: "D24", title: "Chaturvimshamsha Chart" },
+      { div: "D24-R", title: "Chaturvimshamsha (Alternate) Chart" },
+      { div: "D27", title: "Saptavimshamsha Chart" },
+      { div: "D30", title: "Trimsamsa Chart" },
+      { div: "D40", title: "Khavedamsha Chart" },
+      { div: "D45", title: "Akshavedamsha Chart" },
+      { div: "D60", title: "Shashtiamsha Chart" },
+      { div: "chalit", title: "Chalit Chart" },
+      { div: "sun", title: "Sun Chart" },
+      { div: "moon", title: "Moon Chart" },
+      { div: "kp_chalit", title: "KP Chalit Chart" },
+      { div: "transit", title: "Transit Chart" }
+    ];
 
-const chartsArray = divisionalCharts.map(chart => ({
-  div: chart.div,
-  title: chart.title,   // ✅ used for showing text above chart
-  dob,
-  tob: time,
-  lat,
-  lon,
-  tz: 5.5,
-  style: "north",
-  transit_date: "22/01/2022" // or dynamic
-}));
+    const chartsArray = divisionalCharts.map(chart => ({
+      div: chart.div,
+      title: chart.title,   // ✅ used for showing text above chart
+      dob,
+      tob: time,
+      lat,
+      lon,
+      tz: 5.5,
+      style: "north",
+      transit_date: "22/01/2022" // or dynamic
+    }));
 
 
-await addChartsTwoPerPage(doc, chartsArray);
-const dobStr = typeof dob === "string"
-  ? dob
-  : `${dob.getDate().toString().padStart(2,"0")}/${(dob.getMonth()+1).toString().padStart(2,"0")}/${dob.getFullYear()}`;
+    await addChartsTwoPerPage(doc, chartsArray);
+    const dobStr = typeof dob === "string"
+      ? dob
+      : `${dob.getDate().toString().padStart(2, "0")}/${(dob.getMonth() + 1).toString().padStart(2, "0")}/${dob.getFullYear()}`;
 
-await addShodashvargaPage(doc, dobStr, time, lat, lon);
-await addVimshottariDashaPage(doc, dobStr, time, lat, lon);
-// --- Panchang Detailed Pages ---
-await addPanchangNarrativePage(doc, panchangData);
-await addPanchangAnalysisPage(doc, panchangData);
+    await addShodashvargaPage(doc, dobStr, time, lat, lon);
+    await addVimshottariDashaPage(doc, dobStr, time, lat, lon);
+    // --- Panchang Detailed Pages ---
+    addPanchangNarrativePage(doc, panchangData);
+    addPanchangAnalysisPage(doc, panchangData);
+    const planets = ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Rahu", "Ketu"];
 
+    for (let i = 0; i < planets.length; i++) {
+      const planet = planets[i];
+      try {
+        const data = await fetchPlanetReport({ dob, tob: time, lat, lon, tz: 5.5, planet });
+        if (!data?.response?.length) continue;
+
+        const planetData = data.response[0];
+        const imageUrl = `/planets/${planet.toLowerCase()}.png`;
+
+        // Add new page only for planets after the first
+        if (i !== 0) doc.addPage();
+
+        addPlanetNarrativePage(doc, planetData, imageUrl);
+      } catch (err) {
+        console.error(`Error fetching ${planet} report:`, err);
+      }
+    }
 
     // --- Save PDF ---
     doc.save(`CosmicReport_${dob.replaceAll("-", "")}.pdf`);

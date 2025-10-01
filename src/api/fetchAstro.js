@@ -118,3 +118,21 @@ export async function fetchAntarDasha(dob, tob, lat, lon, tz = 5.5) {
   if (!res.ok) throw new Error(`Failed to fetch Antar Dasha: ${res.status}`);
   return res.json();
 }
+
+// 10️⃣ Planet Report
+export async function fetchPlanetReport({
+  dob,
+  tob,
+  lat,
+  lon,
+  tz = 5.5,
+  planet, // default planet
+  lang = "en",
+}) {
+  const formattedDob = dob.split("-").reverse().join("/"); // DD/MM/YYYY
+  const url = `${API_BASE}/horoscope/planet-report?api_key=${API_KEY}&dob=${formattedDob}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&planet=${planet}&lang=${lang}`;
+
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to fetch Planet Report for ${planet}: ${res.status}`);
+  return res.json();
+}
