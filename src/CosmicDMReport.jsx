@@ -1,6 +1,6 @@
 import { jsPDF } from "jspdf";
 import { addPanchangPage } from "./addPanchangPage";
-import { fetchKundliDetails, fetchPanchangData, fetchSunrise, fetchSunset, fetchMoonSign, fetchSunSign, fetchPlanetReport } from "./api/fetchAstro";
+import { fetchKundliDetails, fetchPanchangData, fetchSunrise, fetchSunset, fetchMoonSign, fetchSunSign, fetchPlanetReport, fetchSadeSatiTable } from "./api/fetchAstro";
 import { generateAvakahadaChakraPDF } from "./addAvakahadachakra";
 import { addChartsTwoPerPage } from "./addChartPage";
 import { addShodashvargaPage } from "./addShodashvarga";
@@ -8,6 +8,7 @@ import { addVimshottariDashaPage } from "./addVimshottariPage";
 import { addPanchangAnalysisPage } from "./addPanchangDetails";
 import { addPanchangNarrativePage } from "./addPanchangNarativePage";
 import { addPlanetNarrativePage } from "./addPlanetReport";
+import { addSadeSatiPDFSection } from "./addSadeSatiPage";
 // Helper function to draw paragraph text with spacing
 const addParagraphs = (doc, text, x, startY, lineHeight = 14, paragraphSpacing = 10) => {
   const paragraphs = text.trim().split("\n"); // split by line breaks
@@ -36,7 +37,7 @@ export const generateFullCosmicReport = async (dob, time, lat, lon, userData) =>
     const sunsetData = await fetchSunset(dob, time, lat, lon);
     const moonSignData = await fetchMoonSign(dob, time, lat, lon);
     const sunSignData = await fetchSunSign(dob, time, lat, lon);
-
+    // const sadeSatiData = await fetchSadeSatiTable(dob, time, lat, lon);
 
     const doc = new jsPDF("p", "pt", "a4");
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -290,16 +291,23 @@ and clarity.
         if (!data?.response?.length) continue;
 
         const planetData = data.response[0];
-        const imageUrl = `/planets/${planet.toLowerCase()}.png`;
+        // const imageUrl = `/planets/${planet.toLowerCase()}.png`;
 
-        // Add new page only for planets after the first
-        if (i !== 0) doc.addPage();
+        doc.addPage();
+        addPlanetNarrativePage(doc, planetData);
 
-        addPlanetNarrativePage(doc, planetData, imageUrl);
       } catch (err) {
         console.error(`Error fetching ${planet} report:`, err);
       }
     }
+    console.log(dob);
+    console.log(dobStr);
+    const dobStr1 = typeof dob === "string"
+  ? dob.split("-").reverse().join("/")  // converts "1979-06-03" → "03/06/1979"
+  : `${dob.getDate().toString().padStart(2,"0")}/${(dob.getMonth()+1).toString().padStart(2,"0")}/${dob.getFullYear()}`;
+  const sadeSatiData = await fetchSadeSatiTable({ dob: dobStr1, tob: time, lat, lon, tz: 5.5 });
+    // Add Sade Sati section to the existing PDF
+    addSadeSatiPDFSection(doc, sadeSatiData.response);
 
     // --- Save PDF ---
     doc.save(`CosmicReport_${dob.replaceAll("-", "")}.pdf`);

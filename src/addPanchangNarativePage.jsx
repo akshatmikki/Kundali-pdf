@@ -84,13 +84,13 @@ export const addPanchangNarrativePage = (doc, data, imageUrl) => {
     const ayanamsa = res.ayanamsa?.name || "";
 
     // --- Top Round Image ---
-    if (imageUrl) {
-        const imgSize = 80;
-        const centerX = pageWidth / 2;
-        doc.circle(centerX, currentY + imgSize / 2, imgSize / 2, 'S'); // draw circle outline
-        doc.addImage(imageUrl, 'JPEG', centerX - imgSize / 2, currentY, imgSize, imgSize, undefined, 'FAST');
-        currentY += imgSize + 20;
-    }
+    // if (imageUrl) {
+    //     const imgSize = 80;
+    //     const centerX = pageWidth / 2;
+    //     doc.circle(centerX, currentY + imgSize / 2, imgSize / 2, 'S'); // draw circle outline
+    //     doc.addImage(imageUrl, 'JPEG', centerX - imgSize / 2, currentY, imgSize, imgSize, undefined, 'FAST');
+    //     currentY += imgSize + 20;
+    // }
 
     // --- Title ---
     doc.setFont("Times", "bold");

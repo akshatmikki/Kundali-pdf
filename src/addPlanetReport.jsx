@@ -8,7 +8,7 @@ import { addFooter, addPageBorder, checkPageOverflow } from "./utils/pdfUtils";
  * @param {Object} planetData - planet API response object
  * @param {string} [imageUrl] - optional planet image URL
  */
-export const addPlanetNarrativePage = (doc, planetData, imageUrl) => {
+export const addPlanetNarrativePage = (doc, planetData) => {
   if (!planetData) return;
 
   // Remove doc.addPage() here! Loop should handle pages
@@ -24,13 +24,13 @@ export const addPlanetNarrativePage = (doc, planetData, imageUrl) => {
   let currentY = margin;
 
   // --- Planet Image ---
-  if (imageUrl) {
-    const imgSize = 80;
-    const centerX = pageWidth / 2;
-    doc.circle(centerX, currentY + imgSize / 2, imgSize / 2, 'S');
-    doc.addImage(imageUrl, 'PNG', centerX - imgSize / 2, currentY, imgSize, imgSize, undefined, 'FAST');
-    currentY += imgSize + 20;
-  }
+  // if (imageUrl) {
+  //   const imgSize = 80;
+  //   const centerX = pageWidth / 2;
+  //   doc.circle(centerX, currentY + imgSize / 2, imgSize / 2, 'S');
+  //   doc.addImage(imageUrl, 'PNG', centerX - imgSize / 2, currentY, imgSize, imgSize, undefined, 'FAST');
+  //   currentY += imgSize + 20;
+  // }
 
   // --- Planet Title ---
   doc.setFont("Times", "bold");
@@ -41,8 +41,11 @@ export const addPlanetNarrativePage = (doc, planetData, imageUrl) => {
 
   // --- Section Helper ---
   const addSection = (title, content, isBoldTitle = true) => {
+    if (!content || !content.trim()) return;  // ⬅️ Prevents blank sections
+
     currentY = checkPageOverflow(doc, currentY, margin);
 
+    // --- Title ---
     if (title) {
       doc.setFont("Times", isBoldTitle ? "bold" : "normal");
       doc.setFontSize(14);
@@ -51,6 +54,7 @@ export const addPlanetNarrativePage = (doc, planetData, imageUrl) => {
       currentY += lineHeight + 4;
     }
 
+    // --- Content ---
     doc.setFont("Times", "normal");
     doc.setFontSize(12);
     doc.setTextColor(textColor);
@@ -60,7 +64,7 @@ export const addPlanetNarrativePage = (doc, planetData, imageUrl) => {
       const lines = doc.splitTextToSize(para, pageWidth - margin * 2);
       lines.forEach(line => {
         currentY = checkPageOverflow(doc, currentY, margin);
-        doc.text(line, margin, currentY, { align: "justify" });
+        doc.text(line, margin, currentY, { align: "left" }); // ⬅️ FIX: use left, not justify
         currentY += lineHeight;
       });
       currentY += sectionSpacing;
