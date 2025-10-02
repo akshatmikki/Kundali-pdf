@@ -1,61 +1,65 @@
 const API_BASE = "https://api.vedicastroapi.com/v3-json";
 const API_KEY = import.meta.env.VITE_VEDIC_ASTRO_KEY;
 
-// 1️⃣ Panchang
-export async function fetchPanchangData(date, time, lat, lon, tz = 5.5) {
-  const formattedDate = date.split("-").reverse().join("/");
-  const url = `${API_BASE}/panchang/panchang?api_key=${API_KEY}&date=${formattedDate}&tz=${tz}&lat=${lat}&lon=${lon}&time=${time}&lang=en`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Failed to fetch Panchang data: ${res.status}`);
-  return res.json();
-}
+/**
+ * Utility function to format date from YYYY-MM-DD to DD/MM/YYYY
+ */
+const formatDate = (date) => date.split("-").reverse().join("/");
 
-// 2️⃣ Kundli
-export async function fetchKundliDetails(dob, tob, lat, lon, tz = 5.5) {
-  const formattedDob = dob.split("-").reverse().join("/");
-  const url = `${API_BASE}/extended-horoscope/extended-kundli-details?api_key=${API_KEY}&dob=${formattedDob}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&lang=en`;
+/**
+ * Generic fetch helper
+ */
+const fetchApi = async (url, errorMsg) => {
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`Failed to fetch Kundli details: ${res.status}`);
+  if (!res.ok) throw new Error(`${errorMsg}: ${res.status}`);
   return res.json();
-}
+};
 
-// 3️⃣ Sunrise
-export async function fetchSunrise(date, time, lat, lon, tz = 5.5) {
-  const formattedDate = date.split("-").reverse().join("/");
-  const url = `${API_BASE}/panchang/sunrise?api_key=${API_KEY}&date=${formattedDate}&tz=${tz}&lat=${lat}&lon=${lon}&time=${time}&lang=en`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Failed to fetch Sunrise data: ${res.status}`);
-  return res.json();
-}
+/* --------------------- Panchang --------------------- */
+export const fetchPanchangData = (date, time, lat, lon, tz = 5.5) =>
+  fetchApi(
+    `${API_BASE}/panchang/panchang?api_key=${API_KEY}&date=${formatDate(date)}&tz=${tz}&lat=${lat}&lon=${lon}&time=${time}&lang=en`,
+    "Failed to fetch Panchang data"
+  );
 
-// 4️⃣ Sunset
-export async function fetchSunset(date, time, lat, lon, tz = 5.5) {
-  const formattedDate = date.split("-").reverse().join("/");
-  const url = `${API_BASE}/panchang/sunset?api_key=${API_KEY}&date=${formattedDate}&tz=${tz}&lat=${lat}&lon=${lon}&time=${time}&lang=en`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Failed to fetch Sunset data: ${res.status}`);
-  return res.json();
-}
+export const fetchSunrise = (date, time, lat, lon, tz = 5.5) =>
+  fetchApi(
+    `${API_BASE}/panchang/sunrise?api_key=${API_KEY}&date=${formatDate(date)}&tz=${tz}&lat=${lat}&lon=${lon}&time=${time}&lang=en`,
+    "Failed to fetch Sunrise data"
+  );
 
-// 5️⃣ Moon Sign
-export async function fetchMoonSign(dob, tob, lat, lon, tz = 5.5) {
-  const formattedDob = dob.split("-").reverse().join("/");
-  const url = `${API_BASE}/extended-horoscope/find-moon-sign?api_key=${API_KEY}&dob=${formattedDob}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&lang=en`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Failed to fetch Moon Sign: ${res.status}`);
-  return res.json();
-}
+export const fetchSunset = (date, time, lat, lon, tz = 5.5) =>
+  fetchApi(
+    `${API_BASE}/panchang/sunset?api_key=${API_KEY}&date=${formatDate(date)}&tz=${tz}&lat=${lat}&lon=${lon}&time=${time}&lang=en`,
+    "Failed to fetch Sunset data"
+  );
 
-// 6️⃣ Sun Sign
-export async function fetchSunSign(dob, tob, lat, lon, tz = 5.5) {
-  const formattedDob = dob.split("-").reverse().join("/");
-  const url = `${API_BASE}/extended-horoscope/find-sun-sign?api_key=${API_KEY}&dob=${formattedDob}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&lang=en`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Failed to fetch Sun Sign: ${res.status}`);
-  return res.json();
-}
+/* --------------------- Kundli & Horoscope --------------------- */
+export const fetchKundliDetails = (dob, tob, lat, lon, tz = 5.5) =>
+  fetchApi(
+    `${API_BASE}/extended-horoscope/extended-kundli-details?api_key=${API_KEY}&dob=${formatDate(dob)}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&lang=en`,
+    "Failed to fetch Kundli details"
+  );
 
-// 7️⃣ Chart Image
+export const fetchMoonSign = (dob, tob, lat, lon, tz = 5.5) =>
+  fetchApi(
+    `${API_BASE}/extended-horoscope/find-moon-sign?api_key=${API_KEY}&dob=${formatDate(dob)}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&lang=en`,
+    "Failed to fetch Moon Sign"
+  );
+
+export const fetchSunSign = (dob, tob, lat, lon, tz = 5.5) =>
+  fetchApi(
+    `${API_BASE}/extended-horoscope/find-sun-sign?api_key=${API_KEY}&dob=${formatDate(dob)}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&lang=en`,
+    "Failed to fetch Sun Sign"
+  );
+
+export const fetchAscendant = (dob, tob, lat, lon, tz = 5.5) =>
+  fetchApi(
+    `${API_BASE}/extended-horoscope/find-ascendant?api_key=${API_KEY}&dob=${formatDate(dob)}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&lang=en`,
+    "Failed to fetch Ascendant"
+  );
+
+/* --------------------- Chart Image & Divisional Charts --------------------- */
 export async function fetchChartImage({
   dob,
   tob,
@@ -81,7 +85,7 @@ export async function fetchChartImage({
     return svgText; // base64 string
 }
 
-export async function fetchDivisionalChart({
+export const fetchDivisionalChart = ({
   dob,
   tob,
   lat,
@@ -90,67 +94,99 @@ export async function fetchDivisionalChart({
   div = "D1",
   transit_date = "",
   response_type = "planet_object",
-}) {
-  const formattedDob = dob.split("-").reverse().join("/"); // DD/MM/YYYY
-  const url = `${API_BASE}/horoscope/divisional-charts?api_key=${API_KEY}&dob=${formattedDob}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&div=${div}&transit_date=${transit_date}&response_type=${response_type}&lang=en`;
+}) =>
+  fetchApi(
+    `${API_BASE}/horoscope/divisional-charts?api_key=${API_KEY}&dob=${formatDate(dob)}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&div=${div}&transit_date=${transit_date}&response_type=${response_type}&lang=en`,
+    `Failed to fetch divisional chart (${div})`
+  );
 
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Failed to fetch divisional chart (${div}): ${res.status}`);
-  return res.json();
-}
+/* --------------------- Dashas --------------------- */
+export const fetchMahaDasha = (dob, tob, lat, lon, tz = 5.5) =>
+  fetchApi(
+    `${API_BASE}/dashas/maha-dasha?api_key=${API_KEY}&dob=${formatDate(dob)}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&lang=en`,
+    "Failed to fetch Maha Dasha"
+  );
 
-// 8️⃣ Mahadasha
-export async function fetchMahaDasha(dob, tob, lat, lon, tz = 5.5) {
-  const formattedDob = dob.split("-").reverse().join("/"); // DD/MM/YYYY
-  const url = `${API_BASE}/dashas/maha-dasha?api_key=${API_KEY}&dob=${formattedDob}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&lang=en`;
+export const fetchAntarDasha = (dob, tob, lat, lon, tz = 5.5) =>
+  fetchApi(
+    `${API_BASE}/dashas/antar-dasha?api_key=${API_KEY}&dob=${formatDate(dob)}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&lang=en`,
+    "Failed to fetch Antar Dasha"
+  );
 
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Failed to fetch Maha Dasha: ${res.status}`);
-  return res.json();
-}
+export const fetchMahaDashaPredictions = (dob, tob, lat, lon, tz = 5.5, lang = "en") =>
+  fetchApi(
+    `${API_BASE}/dashas/maha-dasha-predictions?api_key=${API_KEY}&dob=${formatDate(dob)}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&lang=${lang}`,
+    "Failed to fetch Mahadasha Predictions"
+  );
 
-// 9️⃣ Antar Dasha
-export async function fetchAntarDasha(dob, tob, lat, lon, tz = 5.5) {
-  const formattedDob = dob.split("-").reverse().join("/"); // DD/MM/YYYY
-  const url = `${API_BASE}/dashas/antar-dasha?api_key=${API_KEY}&dob=${formattedDob}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&lang=en`;
+/* --------------------- Ashtakvarga --------------------- */
+export const fetchAshtakvarga = (dob, tob, lat, lon, planet, tz = 5.5, lang = "en") =>
+  fetchApi(
+    `${API_BASE}/horoscope/ashtakvarga?api_key=${API_KEY}&dob=${formatDate(dob)}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&planet=${planet}&lang=${lang}`,
+    `Failed to fetch Ashtakvarga for ${planet}`
+  );
 
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Failed to fetch Antar Dasha: ${res.status}`);
-  return res.json();
-}
-// 10️⃣ Ascendant
-export async function fetchAscendant(dob, tob, lat, lon, tz = 5.5) {
-  const formattedDob = dob.split("-").reverse().join("/");
-  const url = `${API_BASE}/extended-horoscope/find-ascendant?api_key=${API_KEY}&dob=${formattedDob}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&lang=en`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Failed to fetch Ascendant: ${res.status}`);
-  return res.json();
-}
-// 10️⃣ Planet Report
-export async function fetchPlanetReport({
+/* --------------------- Sade Sati --------------------- */
+export const fetchSadeSatiTable = ({ dob, tob, lat, lon, tz = 5.5, lang = "en" }) =>
+  fetchApi(
+    `${API_BASE}/extended-horoscope/sade-sati-table?api_key=${API_KEY}&dob=${formatDate(dob)}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&lang=${lang}`,
+    "Failed to fetch Sade Sati Table"
+  );
+
+/* --------------------- Doshas --------------------- */
+export const fetchMangalDosh = (dob, tob, lat, lon, tz = 5.5) =>
+  fetchApi(
+    `${API_BASE}/dosha/mangal-dosh?api_key=${API_KEY}&dob=${formatDate(dob)}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&lang=en`,
+    "Failed to fetch Mangal Dosh"
+  );
+
+export const fetchManglikDosh = (dob, tob, lat, lon, tz = 5.5) =>
+  fetchApi(
+    `${API_BASE}/dosha/manglik-dosh?api_key=${API_KEY}&dob=${formatDate(dob)}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&lang=en`,
+    "Failed to fetch Manglik Dosh"
+  );
+
+export const fetchKaalsarpDosh = (dob, tob, lat, lon, tz = 5.5) =>
+  fetchApi(
+    `${API_BASE}/dosha/kaalsarp-dosh?api_key=${API_KEY}&dob=${formatDate(dob)}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&lang=en`,
+    "Failed to fetch Kaalsarp Dosh"
+  );
+
+export const fetchPitraDosh = (dob, tob, lat, lon, tz = 5.5) =>
+  fetchApi(
+    `${API_BASE}/dosha/pitra-dosh?api_key=${API_KEY}&dob=${formatDate(dob)}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&lang=en`,
+    "Failed to fetch Pitra Dosh"
+  );
+
+export const fetchPapasamaya = (dob, tob, lat, lon, tz = 5.5) =>
+  fetchApi(
+    `${API_BASE}/dosha/papasamaya?api_key=${API_KEY}&dob=${formatDate(dob)}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&lang=en`,
+    "Failed to fetch Papasamaya"
+  );
+
+/* --------------------- Yoga List & Shad Bala --------------------- */
+export const fetchYogaList = (dob, tob, lat, lon, tz = 5.5) =>
+  fetchApi(
+    `${API_BASE}/extended-horoscope/yoga-list?api_key=${API_KEY}&dob=${formatDate(dob)}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&lang=en`,
+    "Failed to fetch Yoga List"
+  );
+
+export const fetchShadBala = (dob, tob, lat, lon, tz = 5.5) =>
+  fetchApi(
+    `${API_BASE}/extended-horoscope/shad-bala?api_key=${API_KEY}&dob=${formatDate(dob)}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&lang=en`,
+    "Failed to fetch Shad Bala"
+  );
+
+  export const fetchPlanetReport = ({
   dob,
   tob,
   lat,
   lon,
   tz = 5.5,
-  planet, // default planet
+  planet,
   lang = "en",
-}) {
-  const formattedDob = dob.split("-").reverse().join("/"); // DD/MM/YYYY
-  const url = `${API_BASE}/horoscope/planet-report?api_key=${API_KEY}&dob=${formattedDob}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&planet=${planet}&lang=${lang}`;
-
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Failed to fetch Planet Report for ${planet}: ${res.status}`);
-  return res.json();
-}
-
-// 11️⃣ Sade Sati Table
-export async function fetchSadeSatiTable({ dob, tob, lat, lon, tz = 5.5, lang = 'en' }) {
-  
-  const url = `https://api.vedicastroapi.com/v3-json/extended-horoscope/sade-sati-table?api_key=${API_KEY}&dob=${dob}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&lang=${lang}`;
-  
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Failed to fetch Sade Sati Table: ${res.status}`);
-  
-  return res.json();
-}
+}) =>
+  fetchApi(
+    `${API_BASE}/horoscope/planet-report?api_key=${API_KEY}&dob=${formatDate(dob)}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&planet=${planet}&lang=${lang}`,
+    `Failed to fetch Planet Report for ${planet}`
+  );

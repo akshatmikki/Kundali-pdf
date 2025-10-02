@@ -1,6 +1,6 @@
 import { jsPDF } from "jspdf";
 import { addPanchangPage } from "./addPanchangPage";
-import { fetchKundliDetails, fetchPanchangData, fetchSunrise, fetchSunset, fetchMoonSign, fetchSunSign, fetchPlanetReport, fetchSadeSatiTable } from "./api/fetchAstro";
+import { fetchKundliDetails, fetchPanchangData, fetchSunrise, fetchSunset, fetchMoonSign, fetchSunSign, fetchPlanetReport, fetchSadeSatiTable, fetchMahaDashaPredictions, fetchAshtakvarga,fetchMangalDosh, fetchManglikDosh,fetchYogaList,fetchShadBala,fetchPitraDosh,fetchKaalsarpDosh, fetchPapasamaya } from "./api/fetchAstro";
 import { generateAvakahadaChakraPDF } from "./addAvakahadachakra";
 import { addChartsTwoPerPage } from "./addChartPage";
 import { addShodashvargaPage } from "./addShodashvarga";
@@ -10,6 +10,7 @@ import { addPanchangNarrativePage } from "./addPanchangNarativePage";
 import { addKundaliDetailsPage } from "./addKundaliDetailsPage";
 import { addPlanetNarrativePage } from "./addPlanetReport";
 import { addSadeSatiPDFSection } from "./addSadeSatiPage";
+import { addCareerPDFSection } from "./addCareerPage";
 // Helper function to draw paragraph text with spacing
 const addParagraphs = (doc, text, x, startY, lineHeight = 14, paragraphSpacing = 10) => {
   const paragraphs = text.trim().split("\n"); // split by line breaks
@@ -38,6 +39,14 @@ export const generateFullCosmicReport = async (dob, time, lat, lon, userData) =>
     const sunsetData = await fetchSunset(dob, time, lat, lon);
     const moonSignData = await fetchMoonSign(dob, time, lat, lon);
     const sunSignData = await fetchSunSign(dob, time, lat, lon);
+    const mangalDosh = await fetchMangalDosh(dob, time, lat, lon);
+const kaalsarpDosh = await fetchKaalsarpDosh(dob, time, lat, lon);
+const pitraDosh = await fetchPitraDosh(dob, time, lat, lon);
+const papasamaya = await fetchPapasamaya(dob, time, lat, lon);
+const moonSign = moonSignData?.response?.moon_sign || "Unknown Moon Sign";
+const sunSign = sunSignData?.response?.sun_sign || "Unknown Sun Sign";
+
+
     // const sadeSatiData = await fetchSadeSatiTable(dob, time, lat, lon);
 
     const doc = new jsPDF("p", "pt", "a4");
@@ -53,7 +62,7 @@ doc.rect(0, 0, pageWidth, doc.internal.pageSize.getHeight(), "F");
 //
 const logo = new Image();
 logo.crossOrigin = "anonymous";
-logo.src = "/companyLogo.png"; // <-- replace with actual logo path
+logo.src = "/logo.png"; // <-- replace with actual logo path
 await new Promise((res) => { logo.onload = res; });
 
 const logoWidth = 80;
@@ -64,7 +73,7 @@ doc.addImage(logo, "PNG", pageWidth / 2 - logoWidth / 2, 50, logoWidth, logoHeig
 doc.setFont("Times", "bold");
 doc.setFontSize(26);
 doc.setTextColor("#333333");
-doc.text("Your Company Name", pageWidth / 2, 150, { align: "center" });
+doc.text("TrustAstrology", pageWidth / 2, 150, { align: "center" });
 
 //
 // ✅ Decorative Line under Company Name
@@ -177,7 +186,7 @@ inspiration, and a deeper connection to the universe around you.
 
 Wishing you a radiant and prosperous journey ahead!
 Warm regards,
-Astro Arun Pandit
+TrustAstrology
 `;
     doc.setFont("Times", "normal");
     doc.setFontSize(13);
@@ -349,8 +358,48 @@ and clarity.
   : `${dob.getDate().toString().padStart(2,"0")}/${(dob.getMonth()+1).toString().padStart(2,"0")}/${dob.getFullYear()}`;
   const sadeSatiData = await fetchSadeSatiTable({ dob: dobStr1, tob: time, lat, lon, tz: 5.5 });
     // Add Sade Sati section to the existing PDF
-    addSadeSatiPDFSection(doc, sadeSatiData.response);
+    doc.addPage();
+    await addSadeSatiPDFSection(doc, sadeSatiData.response);
+    // --- Fetch Career Data from two APIs ---
+const mahaDashaData = await fetchMahaDashaPredictions(dob, time, lat, lon);
+const ashtakvargaData = await fetchAshtakvarga(dob, time, lat, lon);
+const yogaList = await fetchYogaList(dob,time,lat,lon);
+const shadBala= await fetchShadBala(dob,time,lat,lon);
 
+const careerData = {
+  introduction: `Born under ${moonSign}, ${sunSign} ascendant, your career path is influenced by planetary positions and dashas.`,
+  planetaryTraits: mahaDashaData.response?.dashas.map(d => ({
+    name: d.dasha,
+    title: `${d.dasha} Influence`,
+    traits: d.prediction
+  })),
+  personalCareer: `Your unique career blueprint is based on dashas, yogas, and planetary strengths.`,
+  mahadasha: mahaDashaData.response?.dashas[0] && {
+    name: mahaDashaData.response.dashas[0].dasha,
+    title: `${mahaDashaData.response.dashas[0].dasha} Mahadasha Insights`,
+    description: mahaDashaData.response.dashas[0].prediction
+  },
+  amatyakaraka: {
+  name: "Mercury",
+  title: "Amatyakaraka Insights",
+  traits: "Derived dynamically from KP planets or western planets data."
+},
+  doshas: {
+    mangal: mangalDosh.response,
+    kaalsarp: kaalsarpDosh.response,
+    pitra: pitraDosh.response,
+    papasamaya: papasamaya.response
+  },
+  ashtakvarga_order: ashtakvargaData.response?.ashtakvarga_order || [],
+  ashtakvarga_points: ashtakvargaData.response?.ashtakvarga_points || [],
+  ashtakvarga_total: ashtakvargaData.response?.ashtakvarga_total || [],
+  yogas: yogaList.response?.yogas || [],
+  shadBala: shadBala.response || {}
+};
+
+doc.addPage();
+// --- Add Career Section ---
+await addCareerPDFSection(doc, careerData);
     // --- Save PDF ---
     doc.save(`CosmicReport_${dob.replaceAll("-", "")}.pdf`);
   } catch (error) {

@@ -1,66 +1,106 @@
 'use client';
 
-import autoTable from 'jspdf-autotable';
-import { addPageBorder, addFooter, checkPageOverflow, addParagraphs } from './utils/pdfUtils';
+import { addFooter, addPageBorder, checkPageOverflow } from './utils/pdfUtils';
+import { jsPDF } from "jspdf";
 
 /**
- * Add Sade Sati and Shani events section to an existing jsPDF document
- * @param {jsPDF} doc - existing jsPDF instance
+ * Initialize Devanagari font dynamically from TTF
+ */
+/**
+ * Convert ArrayBuffer to Base64
+ */
+const arrayBufferToBase64 = (buffer) => {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000; // safe chunk size for large buffers
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, i + chunkSize);
+    binary += String.fromCharCode.apply(null, chunk);
+  }
+  return btoa(binary);
+};
+
+/**
+ * Initialize Devanagari font dynamically
+ */
+const initDevanagariFont = async (doc) => {
+  const res = await fetch("/NotoSansDevanagari-VariableFont_wdth,wght.ttf");
+  const buffer = await res.arrayBuffer();
+  const base64Font = arrayBufferToBase64(buffer); // ⚡ Convert ArrayBuffer → Base64
+  doc.addFileToVFS("NotoSansDevanagari.ttf", base64Font);
+  doc.addFont("NotoSansDevanagari.ttf", "NotoDevanagari", "normal");
+};
+
+
+/**
+ * Add Sade Sati and Shani events as narrative sections
+ * @param {jsPDF} doc - jsPDF instance
  * @param {Array} sadeSatiData - API response array
  */
-export const addSadeSatiPDFSection = (doc, sadeSatiData) => {
+export const addSadeSatiPDFSection = async (doc, sadeSatiData) => {
+  if (!sadeSatiData || !sadeSatiData.length) return;
+
+  await initDevanagariFont(doc); // ⚡️ Make sure we await
+
   const pageWidth = doc.internal.pageSize.getWidth();
-  const margin = 40;
+  const margin = 50;
+  const accentColor = "#a16a21";
+  const textColor = "#111111";
+  const lineHeight = 14;
+  const sectionSpacing = 12;
+
   let currentY = margin;
+  addPageBorder(doc);
 
-  // --- Helpers ---
-  const addHeader = (text) => {
+  // --- Page Title ---
+  doc.setFont("Times", "bold");
+  doc.setFontSize(22);
+  doc.setTextColor(accentColor);
+  doc.text("Your Sade Sati & Shani Report", pageWidth / 2, currentY, { align: "center" });
+  currentY += 30;
+
+  const addSection = (title, content, options = {}) => {
+    if (!content || !content.trim()) return;
+
     currentY = checkPageOverflow(doc, currentY, margin);
-    doc.setFont('Times', 'bold');
-    doc.setFontSize(20);
-    doc.setTextColor('#1B1B1B');
-    doc.text(text, pageWidth / 2, currentY, { align: 'center' });
-    currentY += 30;
-  };
 
-  const addSubHeader = (text) => {
-    currentY = checkPageOverflow(doc, currentY, margin);
-    doc.setFont('Times', 'bold');
-    doc.setFontSize(14);
-    doc.setTextColor('#333333');
-    doc.text(text, margin, currentY);
-    currentY += 20;
-  };
+    if (title) {
+      doc.setFont("Times", "bold");
+      doc.setFontSize(14);
+      doc.setTextColor(accentColor);
+      doc.text(title, margin, currentY);
+      currentY += lineHeight + 4;
+    }
 
-  const addTable = (headers, data) => {
-    autoTable(doc, {
-      startY: currentY,
-      head: [headers],
-      body: data,
-      theme: 'grid',
-      headStyles: { fillColor: '#f2f2f2', fontStyle: 'bold' },
-      styles: { font: 'Times', fontSize: 11 },
-      margin: { left: margin, right: margin },
-      didDrawPage: (dataArg) => {
-        currentY = dataArg.cursor.y + 20;
-      },
+    doc.setFont(options.font || "Times", options.style || "normal");
+    doc.setFontSize(12);
+    doc.setTextColor(options.color || textColor);
+
+    const paragraphs = content.split("\n").filter(p => p.trim() !== "");
+    paragraphs.forEach(para => {
+      const lines = doc.splitTextToSize(para, pageWidth - margin * 2);
+      lines.forEach(line => {
+        currentY = checkPageOverflow(doc, currentY, margin);
+        doc.text(line, margin, currentY, { align: "left" });
+        currentY += lineHeight;
+      });
+      currentY += sectionSpacing;
     });
   };
 
-  // --- Start Sade Sati Section ---
-  doc.addPage();
-  addPageBorder(doc);
-  addHeader('Your Sade Sati & Shani Report');
+  // --- Intro ---
+  addSection(
+    "Introduction",
+    `This report covers all Sade Sati, Ardhastama, Kantaka, and Ashtama Shani periods.
+Saturn’s influence teaches patience, discipline, and karmic resolution. Each phase below
+includes a description, its duration, and suggested practices to navigate it effectively.`
+  );
 
-  const introText =
-    'This report covers all Sade Sati, Ardhastama, Kantaka, and Ashtama Shani periods. Saturn’s influence can teach patience, discipline, and karmic resolution. Each phase below includes a description, its duration, and suggested practices to navigate it effectively.';
-  currentY = addParagraphs(doc, introText, margin, currentY);
+  // --- Sade Sati and Other Shani Events ---
+  const sadeSatiEvents = sadeSatiData.filter(e => e.type === 'Sade Sati');
+  const otherShaniEvents = sadeSatiData.filter(e => e.type !== 'Sade Sati');
 
-  // --- Separate Sade Sati and other Shani events ---
-  const sadeSatiEvents = sadeSatiData.filter((e) => e.type === 'Sade Sati');
-  const otherShaniEvents = sadeSatiData.filter((e) => e.type !== 'Sade Sati');
-
-  // --- Group Sade Sati by direction (Rising, Peak, Setting) ---
+  // Sade Sati Phases
   const groupedSadeSati = sadeSatiEvents.reduce((acc, item) => {
     const key = item.direction || 'Unknown';
     if (!acc[key]) acc[key] = [];
@@ -68,60 +108,59 @@ export const addSadeSatiPDFSection = (doc, sadeSatiData) => {
     return acc;
   }, {});
 
-  Object.keys(groupedSadeSati).forEach((direction) => {
-    addSubHeader(`Sade Sati Phases - ${direction}`);
+  Object.keys(groupedSadeSati).forEach(direction => {
     groupedSadeSati[direction].forEach((phase, index) => {
-      currentY = checkPageOverflow(doc, currentY, margin);
+      addSection(`Phase ${index + 1} - ${phase.dhaiya} (${direction})`,
+        `Zodiac: ${phase.zodiac}
+Start Date: ${phase.start_date}
+End Date: ${phase.end_date}
+Retrograde: ${phase.retro ? 'Yes' : 'No'}
 
-      addSubHeader(`Phase ${index + 1}: ${phase.dhaiya} (${phase.direction})`);
+${phase.direction === 'Rising'
+  ? 'The Rising phase marks the beginning of Sade Sati. Focus on self-reflection, setting goals, and starting positive habits.'
+  : phase.direction === 'Peak'
+    ? 'The Peak phase is intense. Challenges may arise in career, health, or relationships. Practice patience, meditation, and discipline.'
+    : phase.direction === 'Setting'
+      ? 'The Setting phase brings relief and closure. Reflect on lessons learned and plan for future growth.'
+      : 'This phase is unique and its effects can vary. Stay mindful and disciplined.'
+}`
+      );
 
-      const phaseText = `Zodiac: ${phase.zodiac}\nStart Date: ${phase.start_date}\nEnd Date: ${phase.end_date}\nRetrograde: ${phase.retro ? 'Yes' : 'No'}\n\nSummary:`;
-      currentY = addParagraphs(doc, phaseText, margin, currentY);
-
-      let summary = '';
+      let mantra = '';
       switch (phase.direction) {
         case 'Rising':
-          summary =
-            'The Rising phase marks the beginning of Sade Sati. Focus on self-reflection, setting goals, and starting positive habits.';
+          mantra = `7 Mukhi Rudraksha Mantra:
+ॐ ह्रीं श्रीं क्लीं सातमुख रुद्राक्षाय नमः`;
           break;
         case 'Peak':
-          summary =
-            'The Peak phase is intense. Challenges may arise in career, health, or relationships. Practice patience, meditation, and discipline.';
+          mantra = `Shani Gayatri Mantra:
+ॐ शनैश्चराय विद्महे शनैश्चराय धीमहि तन्नः शनैश्चरः प्रचोदयात्`;
           break;
         case 'Setting':
-          summary =
-            'The Setting phase brings relief and closure. Reflect on lessons learned and plan for future growth.';
+          mantra = `Shani Beej Mantra:
+ॐ प्रां प्रीं प्रौं सः शनैश्चराय नमः`;
           break;
         default:
-          summary = 'This phase is unique and its effects can vary. Stay mindful and disciplined.';
+          mantra = `Shani Gayatri Mantra:
+ॐ शनैश्चराय विद्महे शनैश्चराय धीमहि तन्नः शनैश्चरः प्रचोदयात्`;
       }
-      currentY = addParagraphs(doc, summary, margin, currentY);
+
+      addSection("Recommended Mantra", mantra, { font: "NotoDevanagari", style: "normal", color: "#000080" });
     });
   });
 
-  // --- Other Shani Events Table ---
-  if (otherShaniEvents.length > 0) {
-    addSubHeader('Other Shani Events (Kantaka, Ashtama, Ardhastama)');
-    const shaniTableData = otherShaniEvents.map((item) => [
-      item.type,
-      item.zodiac,
-      item.dhaiya,
-      item.direction,
-      item.start_date,
-      item.end_date,
-      item.retro ? 'Yes' : 'No',
-    ]);
-    addTable(
-      ['Type', 'Zodiac', 'Dhaiya', 'Direction', 'Start Date', 'End Date', 'Retrograde'],
-      shaniTableData
+  // Other Shani Events
+  otherShaniEvents.forEach((event, idx) => {
+    addSection(`Shani Event ${idx + 1} - ${event.type}`,
+      `Zodiac: ${event.zodiac}
+Dhaiya: ${event.dhaiya}
+Direction: ${event.direction}
+Start Date: ${event.start_date}
+End Date: ${event.end_date}
+Retrograde: ${event.retro ? 'Yes' : 'No'}`
     );
-  }
-
-  // --- Remedies & Mantras ---
-  addSubHeader('Remedies & Mantras');
-  const remediesText =
-    '1. Rudraksha Recommendations:\n• 7 Mukhi: Shield against financial instability.\n• 14 Mukhi: Sharpens focus.\n• 17 Mukhi: Boosts confidence and resilience.\n\n2. Daily Practices:\n• Wake up early & start with gratitude\n• Practice mindfulness & meditation\n• Declutter & simplify\n• Stay organized\n• Eat & sleep on time\n\n3. Mantra Chanting:\nShani Gayatri Mantra\nॐ शनैश्चरा य वि द्महे ...';
-  currentY = addParagraphs(doc, remediesText, margin, currentY);
+  });
 
   addFooter(doc);
 };
+

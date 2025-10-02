@@ -22,7 +22,7 @@ function addFooter(doc, pageWidth) {
   doc.setFont("Times", "bold");
   doc.setFontSize(11);
   doc.setTextColor("#6f3800");
-  doc.text("Astro Arun Pandit Private Limited", pageWidth / 2, footerY, { align: "center" });
+  doc.text("TrustAstrology", pageWidth / 2, footerY, { align: "center" });
 
   doc.setFont("Times", "normal");
   doc.setFontSize(10);
