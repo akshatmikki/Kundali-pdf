@@ -6,11 +6,11 @@ import { fetchMahaDasha, fetchAntarDasha } from "./api/fetchAstro";
  * Helper function to draw an Antar Dasha table on the current page
  */
 function drawAntarDashaTable(
-    doc: jsPDF,
-    pageWidth: number,
-    mahadashaLord: string,
-    antarRows: string[][],
-    startY: number
+  doc: jsPDF,
+  pageWidth: number,
+  mahadashaLord: string,
+  antarRows: string[][],
+  startY: number
 ): number {
     doc.setFont("Times", "bold");
     doc.setFontSize(16);
@@ -35,23 +35,23 @@ function drawAntarDashaTable(
  * Add Vimshottari Dasha Page to PDF with two Antar Dasha tables per page
  */
 export async function addVimshottariDashaPage(
-    doc: jsPDF,
-    dob: string,
-    tob: string,
-    lat: number,
-    lon: number
+  doc: jsPDF,
+  dob: string,
+  tob: string,
+  lat: number,
+  lon: number
 ): Promise<void> {
     doc.addPage();
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     let currentY = 50; // Initial Y for the title
 
-    // Title
-    doc.setFont("Times", "bold");
-    doc.setFontSize(20);
-    doc.setTextColor("#3e4a89");
-    doc.text("Vimshottari Dasha", pageWidth / 2, currentY, { align: "center" });
-    currentY += 30;
+  // Title
+  doc.setFont("Times", "bold");
+  doc.setFontSize(20);
+  doc.setTextColor("#3e4a89");
+  doc.text("Vimshottari Dasha", pageWidth / 2, currentY, { align: "center" });
+  currentY += 30;
 
     // 1. Fetch Maha Dasha
     const mahaData = await fetchMahaDasha(dob, tob, lat, lon);
@@ -100,4 +100,3 @@ export async function addVimshottariDashaPage(
         }
     }
 }
-

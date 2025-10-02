@@ -7,6 +7,7 @@ import { addShodashvargaPage } from "./addShodashvarga";
 import { addVimshottariDashaPage } from "./addVimshottariPage";
 import { addPanchangAnalysisPage } from "./addPanchangDetails";
 import { addPanchangNarrativePage } from "./addPanchangNarativePage";
+import { addKundaliDetailsPage } from "./addKundaliDetailsPage";
 import { addPlanetNarrativePage } from "./addPlanetReport";
 import { addSadeSatiPDFSection } from "./addSadeSatiPage";
 // Helper function to draw paragraph text with spacing
@@ -282,6 +283,7 @@ and clarity.
     // --- Panchang Detailed Pages ---
     addPanchangNarrativePage(doc, panchangData);
     addPanchangAnalysisPage(doc, panchangData);
+    await addKundaliDetailsPage(doc, dob, time, lat, lon);
     const planets = ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Rahu", "Ketu"];
 
     for (let i = 0; i < planets.length; i++) {
@@ -300,8 +302,6 @@ and clarity.
         console.error(`Error fetching ${planet} report:`, err);
       }
     }
-    console.log(dob);
-    console.log(dobStr);
     const dobStr1 = typeof dob === "string"
   ? dob.split("-").reverse().join("/")  // converts "1979-06-03" → "03/06/1979"
   : `${dob.getDate().toString().padStart(2,"0")}/${(dob.getMonth()+1).toString().padStart(2,"0")}/${dob.getFullYear()}`;
