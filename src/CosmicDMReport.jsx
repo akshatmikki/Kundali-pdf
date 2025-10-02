@@ -44,16 +44,58 @@ export const generateFullCosmicReport = async (dob, time, lat, lon, userData) =>
     const pageWidth = doc.internal.pageSize.getWidth();
 
     // --- Cover Page ---
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = "/download.png";
-    await new Promise((res) => { img.onload = res; });
+   // --- Clean Cover Page (no background) ---
+doc.setFillColor("#ffffff"); // ensure white background
+doc.rect(0, 0, pageWidth, doc.internal.pageSize.getHeight(), "F");
 
-    doc.addImage(img, "PNG", 0, 0, 595, 842);
-    doc.setFont("CinzelDecorative", "normal");
-    doc.setFontSize(48);
-    doc.setTextColor("#fff8e7");
-    doc.text("COSMIC\nCODE", pageWidth / 2, 180, { align: "center" });
+//
+// ✅ Company Logo + Name as Header
+//
+const logo = new Image();
+logo.crossOrigin = "anonymous";
+logo.src = "/companyLogo.png"; // <-- replace with actual logo path
+await new Promise((res) => { logo.onload = res; });
+
+const logoWidth = 80;
+const logoHeight = 80;
+doc.addImage(logo, "PNG", pageWidth / 2 - logoWidth / 2, 50, logoWidth, logoHeight);
+
+// Company Name
+doc.setFont("Times", "bold");
+doc.setFontSize(26);
+doc.setTextColor("#333333");
+doc.text("Your Company Name", pageWidth / 2, 150, { align: "center" });
+
+//
+// ✅ Decorative Line under Company Name
+//
+doc.setDrawColor("#a16a21");   // golden-brown theme color
+doc.setLineWidth(1);
+doc.line(150, 160, pageWidth - 150, 160); 
+// (x1, y1, x2, y2) — adjust 150 padding if you want wider/narrower line
+
+//
+// ✅ Report Title
+//
+doc.setFont("CinzelDecorative", "normal");
+doc.setFontSize(48);
+doc.setTextColor("#000000");
+doc.text("COSMIC\nCODE", pageWidth / 2, 260, { align: "center" });
+
+//
+// ✅ User Details
+//
+doc.setFont("Times", "normal");
+doc.setFontSize(22);
+doc.setTextColor("#444444");
+
+doc.text(`Name: ${userData?.name || "User"}`, pageWidth / 2, 380, { align: "center" });
+
+const dobStrCover = typeof dob === "string"
+  ? dob.split("-").reverse().join("/")  // YYYY-MM-DD → DD/MM/YYYY
+  : `${dob.getDate().toString().padStart(2, "0")}/${(dob.getMonth() + 1).toString().padStart(2, "0")}/${dob.getFullYear()}`;
+
+doc.text(`Date of Birth: ${dobStrCover}`, pageWidth / 2, 420, { align: "center" });
 
     // --- Disclaimer Page ---
     doc.addPage();
