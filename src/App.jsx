@@ -1,115 +1,135 @@
-import { useState } from "react";
-import { generateFullCosmicReport } from "./CosmicDMReport.jsx";
+import * as React from "react";
+import {
+  Button,
+  FormControl,
+  InputLabel,
+  OutlinedInput,
+  TextField,
+  InputAdornment,
+  IconButton,
+  Typography,
+  Container,
+  Box,
+  Paper,
+  Alert,
+} from "@mui/material";
+import AccountCircle from "@mui/icons-material/AccountCircle";
+import Visibility from "@mui/icons-material/Visibility";
+import VisibilityOff from "@mui/icons-material/VisibilityOff";
+import AstroPDF from "./AstroPDF";
 
-export default function AstroPDF() {
-  const [dob, setDob] = useState("");
-  const [time, setTime] = useState("");
-  const [lat, setLat] = useState("");
-  const [lon, setLon] = useState("");
+export default function LoginPage() {
+  const [loggedIn, setLoggedIn] = React.useState(false);
+  const [username, setUsername] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [errorMessage, setErrorMessage] = React.useState("");
 
-  // New fields for userData
-  const [name, setName] = useState("");
-  const [sex, setSex] = useState("");
-  const [place, setPlace] = useState("");
-  const [state, setState] = useState("");
-  const [country, setCountry] = useState("");
+  const handleLogin = () => {
+    setErrorMessage("");
 
-  const [loading, setLoading] = useState(false);
+    if (!username || !password) {
+      setErrorMessage("Please enter both username and password!");
+      return;
+    }
+
+    if (username === "TAstro" && password === "V@dic#123") {
+      setLoggedIn(true);
+    } else {
+      setErrorMessage("Invalid username or password! (Hint: admin/admin)");
+    }
+  };
+
+  if (loggedIn) {
+    return <AstroPDF />;
+  }
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
-      <h2 className="text-3xl font-bold mb-6 text-orange-800 text-center">
-        Generate Your Cosmic PDF
-      </h2>
-
-      {/* User Info Inputs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <input
-          type="text"
-          placeholder="Full Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="w-full px-4 py-2 border rounded-lg"
-        />
-        <input
-          type="text"
-          placeholder="Sex"
-          value={sex}
-          onChange={(e) => setSex(e.target.value)}
-          className="w-full px-4 py-2 border rounded-lg"
-        />
-        <input
-          type="text"
-          placeholder="Place"
-          value={place}
-          onChange={(e) => setPlace(e.target.value)}
-          className="w-full px-4 py-2 border rounded-lg"
-        />
-        <input
-          type="text"
-          placeholder="State"
-          value={state}
-          onChange={(e) => setState(e.target.value)}
-          className="w-full px-4 py-2 border rounded-lg"
-        />
-        <input
-          type="text"
-          placeholder="Country"
-          value={country}
-          onChange={(e) => setCountry(e.target.value)}
-          className="w-full px-4 py-2 border rounded-lg"
-        />
-      </div>
-
-      {/* DOB & Location Inputs */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <input
-          type="date"
-          value={dob}
-          onChange={(e) => setDob(e.target.value)}
-          className="w-full px-4 py-2 border rounded-lg"
-        />
-        <input
-          type="time"
-          value={time}
-          onChange={(e) => setTime(e.target.value)}
-          className="w-full px-4 py-2 border rounded-lg"
-        />
-        <input
-          type="number"
-          placeholder="Latitude"
-          value={lat}
-          onChange={(e) => setLat(e.target.value)}
-          className="w-full px-4 py-2 border rounded-lg"
-        />
-        <input
-          type="number"
-          placeholder="Longitude"
-          value={lon}
-          onChange={(e) => setLon(e.target.value)}
-          className="w-full px-4 py-2 border rounded-lg"
-        />
-      </div>
-
-      <button
-        onClick={async () => {
-          if (!dob || !time || !lat || !lon || !name || !sex || !place || !state || !country) {
-            alert("Please fill in all fields!");
-            return;
-          }
-          setLoading(true);
-
-          // Prepare userData object
-          const userData = { name, sex, dob, time, place, state, country };
-
-          // Pass userData to PDF generator
-          await generateFullCosmicReport(dob, time, lat, lon, userData);
-          setLoading(false);
+    <Container
+      maxWidth="xs"
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: "100vh",
+        bgcolor: "linear-gradient(135deg, #d8b4fe, #fbcfe8, #fed7aa)",
+      }}
+    >
+      <Paper
+        elevation={8}
+        sx={{
+          p: 5,
+          borderRadius: 4,
+          width: "100%",
+          textAlign: "center",
         }}
-        className="w-full bg-gradient-to-r from-orange-500 to-pink-500 text-white py-3 rounded-xl font-semibold hover:scale-105 transition-transform shadow-lg"
       >
-        {loading ? "Generating..." : "Generate Full Cosmic Report PDF"}
-      </button>
-    </div>
+        {/* Logo Section */}
+        <Box sx={{ mb: 3 }}>
+          {/* If you have a logo image, replace the Box below with <img src="/your-logo.png" alt="logo" /> */}
+          <img src="/logo.png" alt="Logo" style={{ width: 90, height: 90, borderRadius: "50%", marginBottom: 8 }} />
+          <Typography variant="h5" fontWeight="bold" color="secondary">
+            TrustAstrology
+          </Typography>
+        </Box>
+
+        {/* Error Message */}
+        {errorMessage && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {errorMessage}
+          </Alert>
+        )}
+
+        {/* Username Field */}
+        <TextField
+          fullWidth
+          variant="outlined"
+          label="Username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          margin="normal"
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <AccountCircle />
+              </InputAdornment>
+            ),
+          }}
+        />
+
+        {/* Password Field */}
+        <FormControl fullWidth margin="normal" variant="outlined">
+          <InputLabel>Password</InputLabel>
+          <OutlinedInput
+            type={showPassword ? "text" : "password"}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            endAdornment={
+              <InputAdornment position="end">
+                <IconButton
+                  onClick={() => setShowPassword(!showPassword)}
+                  edge="end"
+                  size="small"
+                >
+                  {showPassword ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              </InputAdornment>
+            }
+            label="Password"
+          />
+        </FormControl>
+
+        {/* Login Button */}
+        <Button
+          fullWidth
+          variant="contained"
+          color="secondary"
+          sx={{ mt: 3, py: 1.2, fontWeight: "bold" }}
+          onClick={handleLogin}
+        >
+          Secure Login
+        </Button>
+      </Paper>
+    </Container>
   );
 }
