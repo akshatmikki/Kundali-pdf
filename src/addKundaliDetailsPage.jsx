@@ -62,7 +62,9 @@ export async function addKundaliDetailsPage(doc, dob, tob, lat, lon) {
     const pageWidth = doc.internal.pageSize.getWidth();
     const resp = kundliData.response || {};
 
+    // =====================
     // 1. THREE PILLARS PAGE
+    // =====================
     doc.addPage();
     doc.setDrawColor("#a16a21");
     doc.setLineWidth(1.5);
@@ -93,79 +95,95 @@ Let's explore what these celestial influences say about you!
     );
     await addImageFromUrl(doc, "/Astrology.png", pageWidth / 2 - 80, 400, 160, 130);
 
-    // 2. MOON SIGN
-    doc.addPage();
-    doc.setDrawColor("#a16a21");
-    doc.setLineWidth(1.5);
-    doc.rect(25, 25, 545, 792, "S");
-    doc.setFont("Times", "bold");
-    doc.setFontSize(22);
-    doc.setTextColor("#6f3800");
-    doc.text("MOON SIGN", pageWidth / 2, 60, { align: "center" });
+    // =====================
+// 2. MOON SIGN
+// =====================
+const moonSign = moonSignData.response.moon_sign || "N/A";
+const moonSignImage = `/${moonSign}.png`; // dynamic image from public folder
 
-    doc.setFillColor("#8c5319");
-    doc.roundedRect(68, 90, 464, 550, 26, 26, "F");
-    await addImageFromUrl(doc, "/LEO.png", pageWidth / 2 - 55, 105, 110, 90);
+doc.addPage();
+doc.setDrawColor("#a16a21");
+doc.setLineWidth(1.5);
+doc.rect(25, 25, 545, 792, "S");
+doc.setFont("Times", "bold");
+doc.setFontSize(22);
+doc.setTextColor("#6f3800");
+doc.text("MOON SIGN", pageWidth / 2, 60, { align: "center" });
 
-    doc.setFont("Times", "bold");
-    doc.setFontSize(18);
-    doc.setTextColor("#fff");
-    doc.text((moonSignData.response.moon_sign || "N/A"), pageWidth / 2, 210, { align: "center" });
+doc.setFillColor("#8c5319");
+doc.roundedRect(68, 90, 464, 550, 26, 26, "F");
+await addImageFromUrl(doc, moonSignImage, pageWidth / 2 - 55, 105, 110, 90);
 
-    doc.setFont("Times", "normal");
-    doc.setFontSize(12);
-    doc.setTextColor("#fff");
-    addParagraphs(
-      doc,
-      `
-Since your Moon sign is ${moonSignData.response.moon_sign}, you turn everyday moments into special memories without even trying. Your warmth and light-giving nature inspire and uplift others, making you emotionally strong and deeply connected.
+// **Sign name below the image**
+doc.setFont("Times", "bold");
+doc.setFontSize(14);
+doc.setTextColor("#fff");
+doc.text(`MOON SIGN: ${moonSign.toUpperCase()}`, 110, 210);
+
+// **Description text below the sign name**
+doc.setFont("Times", "normal");
+doc.setFontSize(12);
+doc.setTextColor("#fff");
+addParagraphs(
+  doc,
+  `
+Since your Moon sign is ${moonSign}, you turn everyday moments into special memories without even trying. Your warmth and light-giving nature inspire and uplift others, making you emotionally strong and deeply connected.
 
 Your sensitivity allows you to feel deeply, and your loyalty is unmatched. Though you may be reserved, your heart longs for connection and recognition balanced with humility.
 
 Embrace this special gift and the cosmic wisdom it brings.
-      `.trim(),
-      110,
-      245,
-      464 - 80 // panelWidth - side margin inside
-    );
-    addFooter(doc, pageWidth);
+  `.trim(),
+  110,
+  230, // slightly below the sign name
+  464 - 80
+);
+addFooter(doc, pageWidth);
 
-    // 3. ASCENDANT
-    doc.addPage();
-    doc.setDrawColor("#a16a21");
-    doc.setLineWidth(1.5);
-    doc.rect(25, 25, 545, 792, "S");
-    doc.setFont("Times", "bold");
-    doc.setFontSize(22);
-    doc.setTextColor("#6f3800");
-    doc.text("ASCENDANT", pageWidth / 2, 60, { align: "center" });
+// =====================
+// 3. ASCENDANT
+// =====================
+const ascendant = ascendantData.response.ascendant || "N/A";
+const ascendantImage = `/${ascendant}.png`; // dynamic image from public folder
 
-    doc.setFillColor("#8c5319");
-    doc.roundedRect(68, 90, 464, 550, 26, 26, "F");
-    await addImageFromUrl(doc, "/LEO.png", pageWidth / 2 - 55, 105, 110, 90);
+doc.addPage();
+doc.setDrawColor("#a16a21");
+doc.setLineWidth(1.5);
+doc.rect(25, 25, 545, 792, "S");
+doc.setFont("Times", "bold");
+doc.setFontSize(22);
+doc.setTextColor("#6f3800");
+doc.text("ASCENDANT", pageWidth / 2, 60, { align: "center" });
 
-    doc.setFont("Times", "bold");
-    doc.setFontSize(18);
-    doc.setTextColor("#fff");
-    doc.text((ascendantData.response.ascendant || "N/A"), pageWidth / 2, 210, { align: "center" });
+doc.setFillColor("#8c5319");
+doc.roundedRect(68, 90, 464, 550, 26, 26, "F");
+await addImageFromUrl(doc, ascendantImage, pageWidth / 2 - 55, 105, 110, 90);
 
-    doc.setFont("Times", "normal");
-    doc.setFontSize(12);
-    doc.setTextColor("#fff");
-    addParagraphs(
-      doc,
-      `
-Your Ascendant, or Lagna, ${ascendantData.response.ascendant} brings a powerful and regal energy. You naturally draw attention with your confidence and magnetism. Your leadership and passion inspire those around you.
+// **Sign name below the image**
+doc.setFont("Times", "bold");
+doc.setFontSize(14);
+doc.setTextColor("#fff");
+doc.text(`ASCENDANT: ${ascendant.toUpperCase()}`, 110, 210);
+
+// **Description text below the sign name**
+doc.setFont("Times", "normal");
+doc.setFontSize(12);
+doc.setTextColor("#fff");
+addParagraphs(
+  doc,
+  `
+Your Ascendant, or Lagna, ${ascendant} brings a powerful and regal energy. You naturally draw attention with your confidence and magnetism. Your leadership and passion inspire those around you.
 
 You carry yourself with dignity and a desire to leave a meaningful mark on the world. Balance pride with humility and keep nurturing your generous heart. Your potential is limitless when you embrace your true strengths.
-      `.trim(),
-      110,
-      245,
-      464 - 80
-    );
-    addFooter(doc, pageWidth);
+  `.trim(),
+  110,
+  230,
+  464 - 80
+);
+addFooter(doc, pageWidth);
 
+    // =====================
     // 4. NAKSHATRA
+    // =====================
     doc.addPage();
     doc.setDrawColor("#a16a21");
     doc.setLineWidth(1.5);
