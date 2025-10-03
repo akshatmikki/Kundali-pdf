@@ -27,7 +27,7 @@ export const addFooter = (doc) => {
   doc.setFont("Times", "bold");
   doc.setFontSize(10);
   doc.setTextColor(black);
-  doc.text("Astro Arun Pandit Private Limited", pageWidth / 2, footerY, { align: "center" });
+  doc.text("TrustAstrology", pageWidth / 2, footerY, { align: "center" });
 
   doc.setFont("Times", "normal");
   doc.setFontSize(8);
