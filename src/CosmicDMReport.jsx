@@ -1,6 +1,6 @@
 import { jsPDF } from "jspdf";
 import { addPanchangPage } from "./addPanchangPage";
-import { fetchKundliDetails, fetchPanchangData, fetchSunrise, fetchSunset, fetchMoonSign, fetchSunSign, fetchPlanetReport, fetchSadeSatiTable, fetchMahaDashaPredictions, fetchAshtakvarga,fetchMangalDosh, fetchManglikDosh,fetchYogaList,fetchShadBala,fetchPitraDosh,fetchKaalsarpDosh, fetchPapasamaya } from "./api/fetchAstro";
+import { fetchKundliDetails, fetchPanchangData, fetchSunrise, fetchSunset, fetchMoonSign, fetchSunSign, fetchPlanetReport, fetchSadeSatiTable, fetchMahaDashaPredictions, fetchAshtakvarga,fetchMangalDosh, fetchManglikDosh,fetchYogaList,fetchShadBala,fetchPitraDosh,fetchKaalsarpDosh, fetchPapasamaya, Kplanet } from "./api/fetchAstro";
 import { generateAvakahadaChakraPDF } from "./addAvakahadachakra";
 import { addChartsTwoPerPage } from "./addChartPage";
 import { addShodashvargaPage } from "./addShodashvarga";
@@ -11,6 +11,8 @@ import { addKundaliDetailsPage } from "./addKundaliDetailsPage";
 import { addPlanetNarrativePage } from "./addPlanetReport";
 import { addSadeSatiPDFSection } from "./addSadeSatiPage";
 import { addCareerPDFSection } from "./addCareerPage";
+import { addDoshasPDFSection } from "./addDoshasPage";
+import {generateAshtakavargaReport} from "./addAshtakavargaPage";
 // Helper function to draw paragraph text with spacing
 const addParagraphs = (doc, text, x, startY, lineHeight = 14, paragraphSpacing = 10) => {
   const paragraphs = text.trim().split("\n"); // split by line breaks
@@ -45,8 +47,15 @@ const pitraDosh = await fetchPitraDosh(dob, time, lat, lon);
 const papasamaya = await fetchPapasamaya(dob, time, lat, lon);
 const moonSign = moonSignData?.response?.moon_sign || "Unknown Moon Sign";
 const sunSign = sunSignData?.response?.sun_sign || "Unknown Sun Sign";
-
-
+const Manglikdosh= await fetchManglikDosh(dob,time,lat,lon);
+const doshaData = {
+  mangal: mangalDosh.response,
+  kaalsarp: kaalsarpDosh.response,
+  pitra: pitraDosh.response,
+  papasamaya: papasamaya.response,
+  manglik: Manglikdosh.response
+};
+const kpPlanets = await Kplanet(dob, time, lat, lon);
     // const sadeSatiData = await fetchSadeSatiTable(dob, time, lat, lon);
 
     const doc = new jsPDF("p", "pt", "a4");
@@ -366,40 +375,74 @@ const ashtakvargaData = await fetchAshtakvarga(dob, time, lat, lon);
 const yogaList = await fetchYogaList(dob,time,lat,lon);
 const shadBala= await fetchShadBala(dob,time,lat,lon);
 
+// Extract KP planets (ignoring midheaven, ascendant, Rahu, Ketu for Amatyakaraka)
+const kpPlanet = Object.values(kpPlanets)
+  .filter(p => typeof p === "object" && p.full_name && !["Rahu","Ketu","Ascendant"].includes(p.full_name));
+
+// Sort planets by degree (highest to lowest)
+const sortedPlanets = [...kpPlanet].sort((a, b) => b.local_degree - a.local_degree);
+
+// Amatyakaraka is the second highest degree planet
+const amatyakarakaPlanet = sortedPlanets[1];
+
 const careerData = {
   introduction: `Born under ${moonSign}, ${sunSign} ascendant, your career path is influenced by planetary positions and dashas.`,
+  
   planetaryTraits: mahaDashaData.response?.dashas.map(d => ({
     name: d.dasha,
     title: `${d.dasha} Influence`,
     traits: d.prediction
-  })),
+  })) || [],
+
   personalCareer: `Your unique career blueprint is based on dashas, yogas, and planetary strengths.`,
+
   mahadasha: mahaDashaData.response?.dashas[0] && {
     name: mahaDashaData.response.dashas[0].dasha,
     title: `${mahaDashaData.response.dashas[0].dasha} Mahadasha Insights`,
     description: mahaDashaData.response.dashas[0].prediction
   },
-  amatyakaraka: {
-  name: "Mercury",
-  title: "Amatyakaraka Insights",
-  traits: "Derived dynamically from KP planets or western planets data."
-},
+
+  amatyakaraka: amatyakarakaPlanet && {
+    name: amatyakarakaPlanet.full_name,
+    title: `${amatyakarakaPlanet.full_name} as Amatyakaraka`,
+    traits: `As your Amatyakaraka, ${amatyakarakaPlanet.full_name} plays a major role in shaping your career path, professional skills, and the type of work you’re naturally drawn towards.`
+  },
+
+  // kpPlanets: kpPlanets.map(p => ({
+  //   planet: p.full_name,
+  //   zodiac: p.zodiac,
+  //   house: p.house,
+  //   nakshatra: p.pseudo_nakshatra,
+  //   nakshatraLord: p.pseudo_nakshatra_lord,
+  //   subLord: p.sub_lord,
+  //   retro: p.retro,
+  //   degree: p.local_degree.toFixed(2)
+  // })),
+
   doshas: {
     mangal: mangalDosh.response,
     kaalsarp: kaalsarpDosh.response,
     pitra: pitraDosh.response,
     papasamaya: papasamaya.response
   },
+
   ashtakvarga_order: ashtakvargaData.response?.ashtakvarga_order || [],
   ashtakvarga_points: ashtakvargaData.response?.ashtakvarga_points || [],
   ashtakvarga_total: ashtakvargaData.response?.ashtakvarga_total || [],
+
   yogas: yogaList.response?.yogas || [],
   shadBala: shadBala.response || {}
 };
 
+
 doc.addPage();
 // --- Add Career Section ---
 await addCareerPDFSection(doc, careerData);
+
+doc.addPage();
+await addDoshasPDFSection(doc, doshaData);
+await generateAshtakavargaReport(doc,dob, time, lat, lon, 5.5);
+
     // --- Save PDF ---
     doc.save(`CosmicReport_${dob.replaceAll("-", "")}.pdf`);
   } catch (error) {

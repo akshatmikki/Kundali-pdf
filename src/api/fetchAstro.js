@@ -190,3 +190,25 @@ export const fetchShadBala = (dob, tob, lat, lon, tz = 5.5) =>
     `${API_BASE}/horoscope/planet-report?api_key=${API_KEY}&dob=${formatDate(dob)}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&planet=${planet}&lang=${lang}`,
     `Failed to fetch Planet Report for ${planet}`
   );
+
+ export const fetchAshtakavargaTable = async (dob, tob, lat, lon, tz, planet) => {
+  const url = `${API_BASE}/horoscope/ashtakvarga?api_key=${API_KEY}&dob=${formatDate(dob)}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&planet=${planet}&lang=en`;
+  const res = await fetch(url);
+  return res.json();
+};
+
+export const fetchAshtakavargaChart = async (dob, tob, lat, lon, tz) => {
+  const url = `${API_BASE}/horoscope/ashtakvarga-chart-image?api_key=${API_KEY}&dob=${formatDate(dob)}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&style=south&color=%23ff3366&planet=total&size=400&font_size=30&lang=en&format=base64`;
+  const res = await fetch(url);
+  const text = await res.text();
+
+  // Remove any XML preamble / comments if present
+  return text.trim();
+};
+
+export const Kplanet = async (dob, tob, lat, lon, tz = 5.5) => {
+  const url = `${API_BASE}/extended-horoscope/kp-planets?api_key=${API_KEY}&dob=${formatDate(dob)}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&lang=en`;
+  const res = await fetch(url);
+  const data = await res.json();
+  return data.response;
+}
