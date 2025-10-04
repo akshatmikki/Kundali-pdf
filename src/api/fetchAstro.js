@@ -212,3 +212,45 @@ export const Kplanet = async (dob, tob, lat, lon, tz = 5.5) => {
   const data = await res.json();
   return data.response;
 }
+  
+/**
+ * Fetch Jaimini Karakas
+ */
+export const fetchJaiminiKarakas = (dob, tob, lat, lon, tz = 5.5, lang = "en") =>
+  fetchApi(
+    `${API_BASE}/extended-horoscope/jaimini-karakas?api_key=${API_KEY}&dob=${formatDate(dob)}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&lang=${lang}`,
+    "Failed to fetch Jaimini Karakas"
+  );
+
+/**
+ * Fetch Planet Details
+ */
+export const fetchPlanetDetails = (dob, tob, lat, lon, planet, tz = 5.5, lang = "en") =>
+  fetchApi(
+    `${API_BASE}/horoscope/planet-details?api_key=${API_KEY}&dob=${formatDate(dob)}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&planet=${planet}&lang=${lang}`,
+    `Failed to fetch Planet Details for ${planet}`
+  );
+
+/**
+ * Fetch Planets in Houses
+ */
+export const fetchPlanetsInHouses = (dob, tob, lat, lon, tz = 5.5, lang = "en") =>
+  fetchApi(
+    `${API_BASE}/horoscope/planets-in-houses?api_key=${API_KEY}&dob=${formatDate(dob)}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&lang=${lang}`,
+    "Failed to fetch Planets in Houses"
+  );
+
+/**
+ * Fetch Ascendant Report
+ */
+export const fetchAscendantReport = (dob, tob, lat, lon, tz = 5.5, lang = "en") =>
+  fetchApi(
+    `${API_BASE}/extended-horoscope/ascendant-report?api_key=${API_KEY}&dob=${formatDate(dob)}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&lang=${lang}`,
+    "Failed to fetch Ascendant Report"
+  );
+
+export const fetchPersonalCharacteristics = (dob, tob, lat, lon, tz = 5.5, lang = "en") =>
+  fetchApi(
+    `${API_BASE}/horoscope/personal-characteristics?api_key=${API_KEY}&dob=${formatDate(dob)}&tob=${tob}&lat=${lat}&lon=${lon}&tz=${tz}&lang=${lang}`,
+    "Failed to fetch Personal Characteristics"
+  );
