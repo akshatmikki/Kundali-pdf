@@ -8,6 +8,7 @@ import { addVimshottariDashaPage } from "./addVimshottariPage";
 import { addPanchangAnalysisPage } from "./addPanchangDetails";
 import { addPanchangNarrativePage } from "./addPanchangNarativePage";
 import { addKundaliDetailsPage } from "./addKundaliDetailsPage";
+import { addLoveMarriagePage } from "./addLoveMarriage";
 import { addPlanetNarrativePage } from "./addPlanetReport";
 import { addSadeSatiPDFSection } from "./addSadeSatiPage";
 import { addCareerPDFSection } from "./addCareerPage";
@@ -335,6 +336,7 @@ and clarity.
     addPanchangNarrativePage(doc, panchangData);
     addPanchangAnalysisPage(doc, panchangData);
     await addKundaliDetailsPage(doc, dob, time, lat, lon);
+    await addLoveMarriagePage(doc, dob, time, lat, lon, userData);
     const planets = ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Rahu", "Ketu"];
 
     for (let i = 0; i < planets.length; i++) {
